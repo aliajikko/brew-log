@@ -1,0 +1,1044 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#EDEFEA" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121411" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Brew Log">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}img{max-width:100%}html{-webkit-text-size-adjust:100%}</style>
+<title>Press and Switch Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#EDEFEA; --surface:#FAFBF8; --sunk:#E3E6DF; --ink:#1D1F1B; --muted:#5F635B; --line:#D3D8CE;
+  --press:#94650F; --press-soft:#F1E6CF; --switch:#2C6654; --switch-soft:#D8E8E1;
+  --good:#2C6654; --warn:#A13A28; --on-accent:#FFFFFF;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --sans:"IBM Plex Sans",ui-sans-serif,system-ui,-apple-system,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121411; --surface:#1B1E1A; --sunk:#171916; --ink:#E7EAE3; --muted:#9DA398; --line:#2F342D;
+    --press:#DDA94C; --press-soft:#2E2718; --switch:#72B89F; --switch-soft:#1B2E27;
+    --good:#72B89F; --warn:#E4826F; --on-accent:#121411;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121411; --surface:#1B1E1A; --sunk:#171916; --ink:#E7EAE3; --muted:#9DA398; --line:#2F342D;
+  --press:#DDA94C; --press-soft:#2E2718; --switch:#72B89F; --switch-soft:#1B2E27;
+  --good:#72B89F; --warn:#E4826F; --on-accent:#121411;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans);margin:0}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px;padding-block:20px 64px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:30px;font-weight:800;line-height:1.05}
+h2{font-size:21px;font-weight:600}
+h3{font-size:17px;font-weight:600}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.eyebrow{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+a{color:inherit;text-underline-offset:3px}
+button,select,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+header.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.sync{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.dot.on{background:var(--good)}
+
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:8px;margin-bottom:16px}
+.seg{display:grid;grid-template-columns:repeat(5,1fr);background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+.seg button{border:0;background:transparent;padding:8px 2px;border-radius:7px;font-weight:600;font-size:13.5px;cursor:pointer;color:var(--muted)}
+.seg button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+
+.panel{display:flex;flex-direction:column;gap:14px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.between{justify-content:space-between}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);padding:5px 11px;border-radius:999px;font-size:13px;cursor:pointer;font-weight:500}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tag{display:inline-flex;align-items:center;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:5px;white-space:nowrap}
+.tag.ap{background:var(--press-soft);color:var(--press)}
+.tag.sw{background:var(--switch-soft);color:var(--switch)}
+.tag.plain{background:var(--sunk);color:var(--muted)}
+.tag.warn{background:transparent;color:var(--warn);border:1px solid var(--warn)}
+
+.btn{border:1px solid var(--line);background:var(--surface);padding:9px 14px;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.small{padding:5px 10px;font-size:13px}
+.btn.danger{color:var(--warn)}
+.btn:disabled{opacity:.45;cursor:default}
+
+/* stats strip */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.stat{background:var(--surface);padding:8px 10px}
+.stat .k{font-size:11px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase}
+.stat .v{font-family:var(--mono);font-size:15px;font-weight:500;font-variant-numeric:tabular-nums}
+
+/* recipe cards */
+.recipe{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.recipe .head{padding:14px 16px 12px;display:flex;flex-direction:column;gap:6px;border-left:4px solid var(--press)}
+.recipe.sw .head{border-left-color:var(--switch)}
+.recipe .by{font-size:13px;color:var(--muted)}
+.recipe details{border-top:1px solid var(--line)}
+.recipe summary{padding:10px 16px;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);list-style:none}
+.recipe summary::-webkit-details-marker{display:none}
+.recipe summary::before{content:"+ ";font-family:var(--mono)}
+.recipe details[open] summary::before{content:"\2212  "}
+.recipe .body{padding:0 16px 16px;display:flex;flex-direction:column;gap:12px}
+.mine{font-size:13px;background:var(--sunk);border-radius:7px;padding:6px 10px}
+
+ol.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+ol.steps li{display:grid;grid-template-columns:58px 1fr;gap:10px;padding:8px 0;border-top:1px dashed var(--line)}
+ol.steps li:first-child{border-top:0}
+ol.steps .t{font-family:var(--mono);font-size:13px;color:var(--muted);padding-top:1px}
+.valve{font-family:var(--mono);font-size:11px;font-weight:500;padding:1px 6px;border-radius:4px;margin-right:6px;vertical-align:1px}
+.valve.open{background:var(--switch-soft);color:var(--switch)}
+.valve.closed{background:var(--sunk);color:var(--ink);border:1px solid var(--line)}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;font-size:14px;margin:0}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0}
+
+/* brew timer */
+.clock{font-family:var(--mono);font-size:clamp(60px,20vw,104px);line-height:1;font-weight:500;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.now{border-radius:10px;padding:12px 14px;background:var(--sunk)}
+.now.live{background:var(--ink);color:var(--bg)}
+.now .lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.7;font-weight:600}
+.now .txt{font-size:18px;font-weight:600;line-height:1.3}
+ol.steps li.done{opacity:.45}
+ol.steps li.active .t{color:var(--ink);font-weight:500}
+ol.steps li.active{background:var(--sunk);margin-inline:-10px;padding-inline:10px;border-radius:8px;border-top-color:transparent}
+
+/* form */
+form.log{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f.wide{grid-column:1/-1}
+.f label{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+.f input,.f select,.f textarea{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;width:100%;min-width:0}
+.f textarea{min-height:70px;resize:vertical}
+.f input[type=range]{padding:0;border:0;background:transparent;accent-color:var(--ink)}
+.scale{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.hint{font-size:13px;border-radius:8px;padding:10px 12px;background:var(--sunk)}
+@media (max-width:460px){form.log{grid-template-columns:minmax(0,1fr)}}
+
+/* history */
+.entry{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.entry .score{font-family:var(--display);font-size:26px;font-weight:800;line-height:1}
+.entry .meta{font-size:13px;color:var(--muted)}
+.entry .line{font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums}
+.example{border-style:dashed}
+
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+td.num{white-space:nowrap}
+.scroll{overflow-x:auto}
+.sub{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;background:var(--sunk);border-radius:10px;padding:12px}
+.sub[hidden]{display:none!important}
+@media (max-width:460px){.sub{grid-template-columns:minmax(0,1fr)}}
+.beaninfo{font-size:13px;color:var(--muted);display:flex;gap:6px 12px;flex-wrap:wrap;align-items:center}
+.beaninfo b{color:var(--ink);font-weight:600}
+.linkbtn{border:0;background:none;padding:0;text-decoration:underline;text-underline-offset:3px;cursor:pointer;font-size:13px;color:var(--ink)}
+.bean{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.bar{height:6px;border-radius:3px;background:var(--sunk);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ink)}
+.bar.low i{background:var(--warn)}
+.rest{font-size:12px;font-weight:600;padding:2px 7px;border-radius:5px;background:var(--sunk)}
+.rest.ok{background:var(--switch-soft);color:var(--switch)}
+.rest.early{background:var(--press-soft);color:var(--press)}
+details.fin summary{cursor:pointer;font-weight:600;color:var(--muted);font-size:14px;padding:4px 0}
+.fchip{border:1px solid var(--line);background:var(--bg);padding:5px 10px;border-radius:999px;font-size:13px;cursor:pointer}
+.fchip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+table.dial td,table.dial th{padding:5px 6px;font-size:13px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;font-weight:600;font-size:14px;z-index:20}
+@media (prefers-reduced-motion:no-preference){.now{transition:background .25s}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">AeroPress · Hario Switch · Timemore C5</div>
+      <h1>Press and Switch Log</h1>
+    </div>
+    <div class="sync" id="sync"><span class="dot" id="syncDot"></span><span id="syncText">Connecting</span></div>
+  </header>
+
+  <nav class="tabs" aria-label="Sections">
+    <div class="seg" role="tablist">
+      <button role="tab" id="tab-brew" aria-selected="true" data-tab="brew">Brew</button>
+      <button role="tab" id="tab-recipes" aria-selected="false" data-tab="recipes">Recipes</button>
+      <button role="tab" id="tab-log" aria-selected="false" data-tab="log">Log</button>
+      <button role="tab" id="tab-beans" aria-selected="false" data-tab="beans">Beans</button>
+      <button role="tab" id="tab-grind" aria-selected="false" data-tab="grind">Grind</button>
+    </div>
+  </nav>
+
+  <!-- BREW -->
+  <section class="panel" id="p-brew">
+    <div class="box panel">
+      <div class="f">
+        <label for="brewPick">Recipe</label>
+        <select id="brewPick"></select>
+      </div>
+      <div id="brewStats"></div>
+      <div class="row between">
+        <div class="clock" id="clock">0:00</div>
+        <div class="row">
+          <button class="btn primary" id="startBtn">Start</button>
+          <button class="btn" id="resetBtn">Reset</button>
+        </div>
+      </div>
+      <div class="now" id="now"><div class="lbl">First step</div><div class="txt" id="nowTxt"></div></div>
+      <ol class="steps" id="brewSteps"></ol>
+      <div class="row between">
+        <span class="muted" style="font-size:13px" id="brewPrep"></span>
+        <button class="btn" id="logThisBtn">Log this brew</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- RECIPES -->
+  <section class="panel" id="p-recipes" hidden>
+    <div class="row between">
+      <div class="chips" id="devFilter">
+        <button class="chip" aria-pressed="true" data-v="all">All</button>
+        <button class="chip" aria-pressed="false" data-v="ap">AeroPress</button>
+        <button class="chip" aria-pressed="false" data-v="sw">Switch</button>
+      </div>
+      <div class="chips" id="kindFilter">
+        <button class="chip" aria-pressed="true" data-v="all">Everyone</button>
+        <button class="chip" aria-pressed="false" data-v="expert">Experts</button>
+        <button class="chip" aria-pressed="false" data-v="champ">Champions</button>
+      </div>
+    </div>
+    <p class="muted" style="margin:0;font-size:13px">Nobody here published Timemore C5 settings. The click numbers are estimates, converted from each recipe's own grinder at 31 µm per click counted from burr contact. The Grind tab shows the working.</p>
+    <div class="panel" id="recipeList"></div>
+  </section>
+
+  <!-- LOG -->
+  <section class="panel" id="p-log" hidden>
+    <div class="stats" id="logStats"></div>
+    <div class="box panel">
+      <div class="row between"><h2 id="formTitle">New brew</h2><button class="btn small" id="clearForm" type="button">Clear</button></div>
+      <form class="log" id="logForm" autocomplete="off">
+        <div class="f"><label for="fDate">Date</label><input id="fDate" type="date" required></div>
+        <div class="f"><label for="fDevice">Brewer</label>
+          <select id="fDevice"><option value="ap">AeroPress</option><option value="sw">Hario Switch</option></select></div>
+        <div class="f wide"><label for="fRecipe">Recipe</label><select id="fRecipe"></select></div>
+        <div class="f wide"><label for="fBeanPick">Coffee</label><select id="fBeanPick"></select></div>
+        <div class="beaninfo wide" id="beanInfo"></div>
+        <div class="sub wide" id="newBean" hidden>
+          <div class="f"><label for="fBean">Coffee name</label><input id="fBean" placeholder="Guava Jelly"></div>
+          <div class="f"><label for="fRoaster">Roaster</label><input id="fRoaster" list="roasterList"></div>
+          <div class="f"><label for="fRoast">Roast</label>
+            <select id="fRoast"><option value="">Not set</option><option>Light</option><option>Medium light</option><option>Medium</option><option>Medium dark</option><option>Dark</option></select></div>
+          <div class="f"><label for="fProcess">Process</label>
+            <select id="fProcess"><option value="">Not set</option><option>Washed</option><option>Natural</option><option>Honey</option><option>Anaerobic</option><option>Other</option></select></div>
+          <div class="f"><label for="fRoastDate">Roast date</label><input id="fRoastDate" type="date"></div>
+          <div class="f"><label for="fBag">Bag weight (g)</label><input id="fBag" type="number" inputmode="decimal" min="0" step="1" placeholder="250"></div>
+        </div>
+        <datalist id="roasterList"></datalist>
+        <div class="f"><label for="fClicks">C5 clicks</label><input id="fClicks" type="number" inputmode="decimal" step="0.5" min="0" max="48"></div>
+        <div class="f"><label for="fDose">Coffee (g)</label><input id="fDose" type="number" inputmode="decimal" step="0.1" min="0"></div>
+        <div class="f"><label for="fWater">Water (g)</label><input id="fWater" type="number" inputmode="decimal" step="1" min="0"></div>
+        <div class="f"><label for="fTemp">Water temp (°C)</label><input id="fTemp" type="number" inputmode="decimal" step="1" min="0" max="100"></div>
+        <div class="f"><label for="fTime">Total time (m:ss)</label><input id="fTime" placeholder="3:00"></div>
+        <div class="f wide">
+          <label for="fTaste">How it tasted</label>
+          <select id="fTaste">
+            <option value="">Not set</option>
+            <option value="sour">Sour, thin, sharp</option>
+            <option value="balanced">Balanced, sweet</option>
+            <option value="bitter">Bitter, dry, harsh</option>
+            <option value="weak">Weak, watery</option>
+            <option value="strong">Too strong, heavy</option>
+          </select>
+        </div>
+        <div class="hint wide" id="tasteHint" hidden></div>
+        <div class="f"><label for="fSweet">Sweetness <span class="num" id="vSweet">3</span></label><input id="fSweet" type="range" min="1" max="5" value="3"><div class="scale"><span>low</span><span>high</span></div></div>
+        <div class="f"><label for="fAcid">Acidity <span class="num" id="vAcid">3</span></label><input id="fAcid" type="range" min="1" max="5" value="3"><div class="scale"><span>flat</span><span>bright</span></div></div>
+        <div class="f"><label for="fBody">Body <span class="num" id="vBody">3</span></label><input id="fBody" type="range" min="1" max="5" value="3"><div class="scale"><span>light</span><span>heavy</span></div></div>
+        <div class="f"><label for="fScore">Overall <span class="num" id="vScore">7</span>/10</label><input id="fScore" type="range" min="1" max="10" value="7"><div class="scale"><span>1</span><span>10</span></div></div>
+        <div class="f wide"><label id="flavLbl">Flavours</label><div class="chips" id="fFlav" role="group" aria-labelledby="flavLbl"></div></div>
+        <div class="f wide"><label for="fNotes">Tasting notes</label><textarea id="fNotes" placeholder="Jasmine, peach, clean finish"></textarea></div>
+        <div class="f wide"><label for="fNext">Change next time</label><input id="fNext" placeholder="Two clicks finer"></div>
+        <div class="row wide between">
+          <span class="muted" style="font-size:13px" id="ratioOut"></span>
+          <button class="btn primary" type="submit" id="saveBtn">Save brew</button>
+        </div>
+      </form>
+    </div>
+    <div class="row between">
+      <h2>History</h2>
+      <div class="chips" id="histFilter">
+        <button class="chip" aria-pressed="true" data-v="all">All</button>
+        <button class="chip" aria-pressed="false" data-v="ap">AeroPress</button>
+        <button class="chip" aria-pressed="false" data-v="sw">Switch</button>
+      </div>
+    </div>
+    <div class="panel" id="history"></div>
+    <div class="box panel" id="exportBox">
+      <div><h3>Backup</h3><div class="muted" style="font-size:13px" id="backupNote"></div></div>
+      <p style="margin:0;font-size:14px">Your log lives on this phone only. Back up now and then, and save the file to iCloud Drive. Restoring merges a backup into what is already here, so nothing is lost.</p>
+      <div class="row">
+        <button class="btn primary" id="backupBtn" type="button">Back up everything</button>
+        <button class="btn" id="restoreBtn" type="button">Restore a backup</button>
+        <button class="btn" id="exportBtn" type="button">Spreadsheet (CSV)</button>
+        <input type="file" id="restoreFile" accept="application/json,.json" hidden>
+      </div>
+    </div>
+  </section>
+
+  <!-- BEANS -->
+  <section class="panel" id="p-beans" hidden>
+    <div class="row between"><h2>Your coffees</h2><button class="btn small primary" id="addBeanBtn" type="button">Add coffee</button></div>
+    <div class="box panel" id="beanEditor" hidden>
+      <h3 id="beanEdTitle">Add coffee</h3>
+      <form class="log" id="beanForm" autocomplete="off">
+        <div class="f"><label for="bName">Coffee name</label><input id="bName" required></div>
+        <div class="f"><label for="bRoaster">Roaster</label><input id="bRoaster" list="roasterList"></div>
+        <div class="f"><label for="bOrigin">Origin</label><input id="bOrigin" placeholder="Colombia, Huila"></div>
+        <div class="f"><label for="bVariety">Variety</label><input id="bVariety" placeholder="Pink Bourbon"></div>
+        <div class="f"><label for="bRoast">Roast</label>
+          <select id="bRoast"><option value="">Not set</option><option>Light</option><option>Medium light</option><option>Medium</option><option>Medium dark</option><option>Dark</option></select></div>
+        <div class="f"><label for="bProcess">Process</label>
+          <select id="bProcess"><option value="">Not set</option><option>Washed</option><option>Natural</option><option>Honey</option><option>Anaerobic</option><option>Other</option></select></div>
+        <div class="f"><label for="bRoastDate">Roast date</label><input id="bRoastDate" type="date"></div>
+        <div class="f"><label for="bBag">Bag weight (g)</label><input id="bBag" type="number" inputmode="decimal" min="0" step="1"></div>
+        <div class="f wide"><label for="bNotes">Roaster's notes</label><input id="bNotes" placeholder="Guava, strawberry, jelly"></div>
+        <div class="row wide between">
+          <button class="btn" type="button" id="beanCancel">Cancel</button>
+          <button class="btn primary" type="submit" id="beanSave">Save coffee</button>
+        </div>
+      </form>
+    </div>
+    <div class="panel" id="beanList"></div>
+    <details class="fin" id="finWrap" hidden><summary id="finSum">Finished bags</summary><div class="panel" id="finList" style="margin-top:10px"></div></details>
+  </section>
+
+  <!-- GRIND -->
+  <section class="panel" id="p-grind" hidden>
+    <div class="box panel">
+      <h2>Your grinder: Timemore C5</h2>
+      <div class="stats">
+        <div class="stat"><div class="k">Per click</div><div class="v">0.031 mm</div></div>
+        <div class="stat"><div class="k">Per turn</div><div class="v">48 clicks</div></div>
+        <div class="stat"><div class="k">Macro steps</div><div class="v">16 per turn</div></div>
+        <div class="stat"><div class="k">Burr</div><div class="v">42 mm S2C</div></div>
+      </div>
+      <p style="margin:0">Timemore's own spec for the C5 series: 0.031 mm per click, 48 clicks per rotation, 16 macro steps, and a finest grind setting of 3. They say a 3 click buffer is the practical zero point, there to protect the burrs. So close the dial to the stop, count out, and treat 3 as the finest you should ever use.</p>
+      <p style="margin:0">The C5 Pro matches the C5 on every number that affects grind, and the difference is the pull to fold handle, so settings transfer between them. The ESP models are genuinely different: 0.015 mm per click, 50 clicks per rotation, 10 macro steps. Their numbers do not transfer.</p>
+    </div>
+    <div class="box panel">
+      <h3>Honest Coffee Guide ranges</h3>
+      <p style="margin:0;font-size:14px">That chart is written on a 0 to 16 scale as number point clicks, and the page never explains it. Timemore's spec does: 16 macro steps and 48 clicks per rotation, so each numbered step is 3 clicks and <span class="mono">clicks = 3 × number + the digit after the point</span>. Converted:</p>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Method</th><th>Their scale</th><th>Clicks from zero</th></tr></thead>
+          <tbody>
+            <tr><td>Espresso</td><td class="num">3.1 to 6.1</td><td class="num">10 to 19</td></tr>
+            <tr><td>Moka pot</td><td class="num">6.1 to 11</td><td class="num">19 to 33</td></tr>
+            <tr><td>AeroPress</td><td class="num">5.2 to 16</td><td class="num">17 to 48</td></tr>
+            <tr><td>V60</td><td class="num">7 to 11.2</td><td class="num">21 to 35</td></tr>
+            <tr><td>Pour over</td><td class="num">7 to 15.1</td><td class="num">21 to 46</td></tr>
+            <tr><td>Steep and release, the Switch</td><td class="num">7.2 to 13.2</td><td class="num">23 to 41</td></tr>
+            <tr><td>Cupping</td><td class="num">8 to 14</td><td class="num">24 to 42</td></tr>
+            <tr><td>French press</td><td class="num">11.2 to 16</td><td class="num">35 to 48</td></tr>
+            <tr><td>Cold brew</td><td class="num">13.2 to 16</td><td class="num">41 to 48</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted" style="margin:0;font-size:13px">The AeroPress and pour over ranges are so wide that they only rule things out. The narrower V60 and steep and release rows are the useful ones. Source: honestcoffeeguide.com, C5 Pro page.</p>
+    </div>
+    <div class="box panel">
+      <h3>How the estimates in this log were made</h3>
+      <p style="margin:0">Each recipe's own grind was converted to a burr gap, then divided by 31 µm. A Comandante steps about 30 µm from burr contact too, so a Comandante click count carries across almost one to one. Recipes that name only a style were placed on this scale: fine about 450 µm (14 clicks), medium fine about 600 µm (19), medium about 750 µm (24), medium coarse about 900 µm (29), coarse about 1100 µm (35).</p>
+      <p style="margin:0"><strong>One anchor disagrees.</strong> The Coffee Chronicler grinds his Switch recipe at 22 to 24 Comandante clicks, but says his own C5 needed 15 to 17 for pour over, which is 5 to 7 clicks finer than this conversion. So if a recipe tastes thin and drains fast at the click number shown here, go finer rather than assuming the coffee is at fault.</p>
+      <p style="margin:0"><strong>The buffer shifts everything.</strong> These numbers assume the burrs close at click 0. Timemore's 3 click buffer suggests contact actually sits near click 3, which would make every estimate here 3 clicks fine. That is the second reason to treat them as a starting point rather than a setting.</p>
+      <p class="muted" style="margin:0;font-size:13px">Conversions from a 1Zpresso ZP6, a K-Ultra, a Kinu or a café EK43 are the least reliable, since their step sizes and zero points are not comparable. Those recipes are placed by description.</p>
+    </div>
+    <div class="box panel">
+      <h3>Adjusting from the cup</h3>
+      <dl class="kv">
+        <dt>Sour, thin</dt><dd>Grind 1 to 2 clicks finer, or brew 2 to 3 °C hotter. On the Switch, a longer steep also helps.</dd>
+        <dt>Bitter, dry</dt><dd>Grind 1 to 2 clicks coarser, or brew cooler. Check you are not pressing through the hiss.</dd>
+        <dt>Weak</dt><dd>Raise the dose or tighten the ratio before touching grind. For concentrate recipes, add less bypass water.</dd>
+        <dt>Too strong</dt><dd>Add bypass water after brewing, or loosen the ratio.</dd>
+        <dt>Switch drains slowly</dt><dd>Grind coarser. Fines and very fine settings stall the drawdown and push the cup bitter.</dd>
+      </dl>
+      <p class="muted" style="margin:0;font-size:13px">Change one thing per brew and write it in "Change next time", so the log can tell you what worked.</p>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ---------- recipe library ---------- */
+// valve: "open" | "closed" | null. t in seconds.
+const R = [
+/* AeroPress experts */
+{id:"hoffmann-ultimate-ap", dev:"ap", kind:"expert", name:"The Ultimate AeroPress", author:"James Hoffmann", cred:"World Barista Champion 2007",
+ dose:11, water:200, temp:"Just off the boil", grind:"Medium fine", c5:"18 to 20", setup:"Standard (not inverted). One paper filter, not rinsed.",
+ steps:[{t:0,a:"Pour all 200 g, wet every ground. Insert plunger about 1 cm to hold the vacuum."},{t:120,a:"Swirl gently."},{t:150,a:"Press gently, about 30 seconds, all the way."},{t:180,a:"Done."}],
+ notes:"Parameters from secondary write-ups of his video, which the research could not open directly. One write-up describes the grind as much finer, close to espresso.",
+ src:"https://www.youtube.com/watch?v=j6VlT_jUVPc", verified:false},
+{id:"kasuya-ap", dev:"ap", kind:"expert", name:"AeroPress", author:"Tetsu Kasuya", cred:"World Brewers Cup Champion 2016",
+ dose:30, water:120, bypass:30, temp:"80 to 82 °C", grind:"Coarse", c5:"26 to 28", setup:"Inverted. AeroPress paper filter.",
+ steps:[{t:0,a:"Pour 120 g, stir for a few seconds."},{t:30,a:"Cap on and flip."},{t:70,a:"Press, up to 20 seconds."},{t:90,a:"Add 30 g hot water."}],
+ notes:"From his company Philocoffea. A widely shared variant uses 28 Comandante clicks, stirs 10 times at 0:30, flips at 1:00 and dilutes with 80 to 100 g. That version is unverified.",
+ src:"https://en.philocoffea.com/blogs/blog/tetsu-kasuya-aeropress-coffee-recipe", verified:true},
+{id:"chronicler-light-ap", dev:"ap", kind:"expert", name:"Light roast AeroPress", author:"The Coffee Chronicler", cred:"Asser Christensen, Q Arabica Grader",
+ dose:17, water:260, temp:"Near boiling", grind:"Fine, near espresso", c5:"10 to 12", setup:"Standard. Aesir filter or two paper filters, rinsed.",
+ steps:[{t:0,a:"Pour 260 g, plunger in. No stirring."},{t:50,a:"Press about 20 seconds. Stop before the hiss."},{t:70,a:"Done."}],
+ notes:"Short, hot and fine, built for light roasts.",
+ src:"https://coffeechronicler.com/aeropress-recipes/", verified:true},
+{id:"chronicler-long-ap", dev:"ap", kind:"expert", name:"The Long Brew", author:"The Coffee Chronicler", cred:"Asser Christensen, Q Arabica Grader",
+ dose:14, water:250, temp:"93 °C", grind:"Coarse", c5:"32 to 36", setup:"Inverted. One paper filter, rinsed.",
+ steps:[{t:0,a:"Pour 250 g."},{t:240,a:"Stir 5 times."},{t:720,a:"Flip and press slowly."}],
+ notes:"A 12 minute steep. Forgiving and heavy bodied.",
+ src:"https://coffeechronicler.com/ultimate-guide-to-the-aeropress/", verified:true},
+{id:"hedrick-ap", dev:"ap", kind:"expert", name:"A Very Good AeroPress", author:"Lance Hedrick", cred:"Extra, widely cited",
+ dose:15, water:250, temp:"92 °C light, 88 °C medium, 82 to 84 °C dark", grind:"Medium fine, start coarser", c5:"18 to 20", setup:"Standard. Paper filter. Use 16 g for medium and 17 g for dark roasts.",
+ steps:[{t:0,a:"Level the bed. Pour a little slowly, swirl, bloom."},{t:45,a:"Fill to 250 g. Plunger in, swirl."},{t:120,a:"Press gently. Stop before the hiss."}],
+ notes:"From a user submitted summary of his video. Unverified.",
+ src:"https://www.youtube.com/watch?v=CafyJ2p0Bgs", verified:false},
+
+/* AeroPress champions */
+{id:"wac-2025", dev:"ap", kind:"champ", name:"World AeroPress Champion 2025", author:"Némo Pop", cred:"Australia",
+ dose:18, water:100, bypass:70, temp:"84 °C, bypass at 50 °C", grind:"Coarse, fines sifted out (Comandante 31 clicks, Tigershark burrs)", c5:"29 to 31", setup:"Standard with Flow Control cap. Two paper filters. Put 70 g of 50 °C water in the carafe first.",
+ steps:[{t:0,a:"Pour 100 g at 84 °C."},{t:25,a:"Stir north south north south, then west east west east."},{t:50,a:"Press gently, about 20 seconds, into the bypass water."},{t:70,a:"Done."}],
+ notes:"Probably the \"Nemo\" you follow. Competition water was 125 ppm. The sifting is optional at home.",
+ src:"https://worldaeropresschampionship.com/pages/recipes", verified:true},
+{id:"wac-2024", dev:"ap", kind:"champ", name:"World AeroPress Champion 2024", author:"George Stanica", cred:"Romania",
+ dose:18, water:100, bypass:"About 55 g hot, then 20 to 30 g cool", temp:"96 °C", grind:"Medium coarse (Comandante 58 Red Clix, about 870 µm)", c5:"27 to 29", setup:"Inverted. One Aesir filter, rinsed. Water about 85 to 90 ppm.",
+ steps:[{t:0,a:"Pour 50 g slowly over 5 to 6 seconds."},{t:30,a:"Pour 50 g more. Light stir north south east west for 10 seconds."},{t:80,a:"Cap on, push the air out. Gentle swirl."},{t:95,a:"Flip and press over 30 to 40 seconds, to 76 to 79 g."},{t:135,a:"Top up with hot water to 130 to 135 g, then 20 to 30 g room temperature water."}],
+ notes:"aeropress.com lists a different home version: upright, 93 °C, 225 g, pressed at 1:30.",
+ src:"https://worldaeropresschampionship.com/pages/recipes", verified:true},
+{id:"wac-2023", dev:"ap", kind:"champ", name:"World AeroPress Champion 2023", author:"Tay Wipvasutt", cred:"Thailand",
+ dose:18, water:100, bypass:55, temp:"89 °C", grind:"Medium coarse (1Zpresso ZP6)", c5:"25 to 27", setup:"Inverted. One paper filter, rinsed. Start with 16 g, keep 2 g aside.",
+ steps:[{t:0,a:"16 g coffee in, pour to 100 g."},{t:30,a:"Stir 5 seconds with one side of a chopstick."},{t:45,a:"Add the remaining 2 g coffee."},{t:55,a:"Stir 5 seconds."},{t:85,a:"Push the air out, cap on, flip."},{t:95,a:"Press about 30 seconds, to about 75 g."},{t:125,a:"Room temperature water to 115 g, then hot water to about 155 g."}],
+ notes:"Adding coffee mid steep is the unusual part.",
+ src:"https://worldaeropresschampionship.com/pages/recipes", verified:true},
+{id:"wac-2022", dev:"ap", kind:"champ", name:"World AeroPress Champion 2022", author:"Jibbi Little", cred:"Australia",
+ dose:18, water:94, bypass:"to 150 g", temp:"90 °C", grind:"Coarse, fines sifted out", c5:"27 to 29", setup:"Inverted. One AeroPress paper filter, rinsed.",
+ steps:[{t:0,a:"Pour 94 g. Stir gently 35 times."},{t:80,a:"Cap on, push the air out."},{t:90,a:"Flip."},{t:100,a:"Press 30 seconds, to 58 to 64 g concentrate."},{t:130,a:"Dilute with 90 °C water to 150 g."}],
+ notes:"Target TDS 1.30 to 1.35. Optional coffee ice balls in the cup.",
+ src:"https://worldaeropresschampionship.com/pages/recipes", verified:true},
+{id:"wac-2021", dev:"ap", kind:"champ", name:"World AeroPress Champion 2021", author:"Tuomas Merikanto", cred:"Finland",
+ dose:18, water:200, temp:"80 °C", grind:"Medium", c5:"22 to 24", setup:"Inverted. Two paper filters, rinsed.",
+ steps:[{t:0,a:"Pour 50 g."},{t:10,a:"Stir very gently back and forth 3 times."},{t:15,a:"Pour to 200 g by 0:30."},{t:50,a:"Stir 3 more times."},{t:60,a:"Push the air out, cap on."},{t:100,a:"Flip and press, finish by 2:00."},{t:120,a:"Swirl to cool for 30 seconds, then pour from height into another cup."}],
+ notes:"Won the first virtual final. No bypass water.",
+ src:"https://worldaeropresschampionship.com/pages/recipes", verified:true},
+{id:"wac-2019", dev:"ap", kind:"champ", name:"World AeroPress Champion 2019", author:"Wendelien van Bunnik", cred:"Netherlands",
+ dose:30, water:100, bypass:"100 to 120", temp:"92 °C", grind:"Medium coarse", c5:"26 to 28", setup:"Inverted. Aesir filter, rinsed. Soft water (30 ppm).",
+ steps:[{t:0,a:"Pour 100 g in 10 seconds."},{t:10,a:"Stir firmly 20 times in 10 seconds."},{t:20,a:"Cap on, gently press out the air."},{t:40,a:"Flip and press everything out, about 60 g."},{t:60,a:"Add 100 g water, more to taste. Cool to about 60 °C by stirring."}],
+ notes:"The whole brew is one minute.",
+ src:"https://worldaeropresschampionship.com/pages/recipes", verified:true},
+{id:"wac-2018", dev:"ap", kind:"champ", name:"World AeroPress Champion 2018", author:"Carolina Garay", cred:"USA",
+ dose:34.9, water:100, bypass:100, temp:"85 °C", grind:"Medium coarse", c5:"28 to 30", setup:"Inverted. Paper filter, rinsed hot.",
+ steps:[{t:0,a:"Pour 100 g over 30 seconds."},{t:30,a:"Stir vigorously for 30 seconds."},{t:60,a:"Cap, flip, press for 30 seconds into a cool server."},{t:90,a:"Add 60 g water at 85 °C and 40 g at room temperature."}],
+ notes:"aeropress.com's version says fine (Comandante 15 clicks) and two filters, which conflicts with the competition grind.",
+ src:"https://worldaeropresschampionship.com/pages/recipes", verified:true},
+{id:"wac-2017", dev:"ap", kind:"champ", name:"World AeroPress Champion 2017", author:"Paulina Miczka", cred:"England",
+ dose:35, water:150, bypass:"160 to 200", temp:"84 °C", grind:"Medium coarse, about V60", c5:"24 to 26", setup:"Inverted. Paper filter, pre wet.",
+ steps:[{t:0,a:"Pour 150 g by 0:15."},{t:15,a:"Stir continuously until 0:35."},{t:35,a:"Cap on."},{t:65,a:"Flip and press until 1:35, about 90 ml at 4.5% TDS."},{t:95,a:"Dilute with 160 to 200 g hot water."}],
+ notes:"The official page states 370 g total, which does not match its own steps.",
+ src:"https://worldaeropresschampionship.com/pages/recipes", verified:true},
+{id:"wac-2016", dev:"ap", kind:"champ", name:"World AeroPress Champion 2016", author:"Filip Kucharczyk", cred:"Poland",
+ dose:35, water:150, bypass:"100 to 120", temp:"81 °C", grind:"Coarse (Comandante 40 to 45 on aeropress.com)", c5:"38 to 43", setup:"Inverted. Paper filter, rinsed.",
+ steps:[{t:0,a:"Pour 150 g over 15 seconds."},{t:15,a:"Stir until 0:30."},{t:30,a:"Cap on."},{t:60,a:"Flip, swirl, press."},{t:90,a:"Dilute with 100 to 120 g to taste."}],
+ notes:"Press duration not stated.",
+ src:"https://worldaeropresschampionship.com/pages/recipes", verified:true},
+{id:"wac-2015", dev:"ap", kind:"champ", name:"World AeroPress Champion 2015", author:"Lukas Zahradnik", cred:"Slovakia",
+ dose:20, water:230, temp:"79 °C", grind:"Medium", c5:"24 to 26", setup:"Paper filter. Listed as inverted, though no flip step is written.",
+ steps:[{t:0,a:"Pour 60 g. Wiggle the brewer hard for 15 seconds."},{t:15,a:"Bloom."},{t:45,a:"Pour the remaining 170 g in 10 seconds."},{t:55,a:"Press over 45 seconds."},{t:100,a:"Done."}],
+ notes:"No bypass. aeropress.com's home version presses right after the second pour and stops above the (1) mark.",
+ src:"https://worldaeropresschampionship.com/pages/recipes", verified:true},
+
+/* Switch experts */
+{id:"kasuya-hybrid", dev:"sw", kind:"expert", name:"Hybrid Method", author:"Tetsu Kasuya", cred:"World Brewers Cup Champion 2016",
+ dose:20, water:280, temp:"93 °C, then about 75 °C", grind:"A little fine (Comandante about 20)", c5:"19 to 21", setup:"Switch with V60 paper.",
+ steps:[{t:0,v:"open",a:"Pour 60 g at 93 °C."},{t:30,v:"open",a:"Pour 60 g (120 g). Then cool the kettle to about 75 °C with cold water."},{t:75,v:"closed",a:"Close. Pour to 280 g."},{t:105,v:"open",a:"Open and drain."},{t:180,a:"Stop by 3:00 even if still dripping."}],
+ notes:"Splitting the first two pours 50 and 70 brings out sweetness. He said 20 Comandante clicks was a little too fine in a later video. Many blogs quote 90 °C and 70 °C, the video says 93 and 75.",
+ src:"https://www.youtube.com/watch?v=gC8K40kZ_6E", verified:true},
+{id:"kasuya-new-hybrid", dev:"sw", kind:"expert", name:"New Hybrid", author:"Tetsu Kasuya", cred:"World Brewers Cup Champion 2016",
+ dose:20, water:300, temp:"Start hot, cool to about 80 °C for the last pour", grind:"Comandante about 28", c5:"27 to 29", setup:"Switch with V60 paper.",
+ steps:[{t:0,v:"closed",a:"Bloom with about 40 g."},{t:40,v:"open",a:"Open. Pour to 120 g."},{t:90,v:"open",a:"Pour to 200 g. Cool the kettle to about 80 °C."},{t:130,v:"closed",a:"Close. Pour to 300 g."},{t:165,v:"open",a:"Open and drain."},{t:210,a:"Done, about 3:30."}],
+ notes:"The opening time after the bloom is not said out loud in the video. Third party versions give 0:35 to 0:40 and a 90 to 93 °C start.",
+ src:"https://www.youtube.com/watch?v=4FeUp_zNiiY", verified:true},
+{id:"kasuya-switch-2022", dev:"sw", kind:"expert", name:"Immersion then pour", author:"Tetsu Kasuya", cred:"Hario ambassador method, 2022",
+ dose:20, water:300, temp:"Not stated", grind:"About medium", c5:"23 to 25", setup:"Switch with V60 paper.",
+ steps:[{t:0,v:"closed",a:"Pour 240 g."},{t:90,v:"open",a:"Gently break the layer at the edges. Open and pour to 300 g."},{t:180,a:"Done, 3:00 to 3:30."}],
+ notes:"The valve opening is implied in the video, not stated.",
+ src:"https://www.youtube.com/watch?v=sBwfcNXZhgA", verified:true},
+{id:"kasuya-iced-2026", dev:"sw", kind:"expert", name:"Two pour iced Hybrid", author:"Tetsu Kasuya", cred:"August 2026",
+ dose:20, water:150, temp:"90 to 93 °C", grind:"28 clicks, grinder not named", c5:"27 to 29", setup:"80 g ice in the server.",
+ steps:[{t:0,v:"open",a:"Pour 50 g, swirl lightly."},{t:40,v:"closed",a:"Close. Pour to 150 g."},{t:90,v:"open",a:"Open, swirl while it drains onto the ice."}],
+ notes:"He says cooling the water for this one is optional.",
+ src:"https://www.youtube.com/watch?v=v0CXzmw1TXg", verified:true},
+{id:"chronicler-5050", dev:"sw", kind:"expert", name:"Ultimate Switch (50/50)", author:"The Coffee Chronicler", cred:"Asser Christensen, Q Arabica Grader",
+ dose:20, water:320, temp:"93 °C start, 86 to boiling by roast", grind:"Medium fine (Comandante 22 to 24)", c5:"21 to 24", setup:"Switch 02 with V60 02 paper, rinsed.",
+ steps:[{t:0,v:"open",a:"Pour 160 g in circles."},{t:45,v:"closed",a:"Close. Pour the other 160 g."},{t:120,v:"open",a:"Open and drain."},{t:180,a:"Done, 2:45 to 3:15."}],
+ notes:"For a sweeter cup, close at 0:25. Use 1:15 with an entry level grinder. 30 g to 480 g closes at 1:00 and opens at 2:30. He owns a C5 and settled on 15 to 17 clicks for pour over, finer than the conversion suggests, so try that end first.",
+ src:"https://coffeechronicler.com/hario-switch/", verified:true},
+{id:"chronicler-8g", dev:"sw", kind:"expert", name:"Small 8 g workhorse", author:"The Coffee Chronicler", cred:"2026 video",
+ dose:8, water:130, temp:"93 °C", grind:"Medium fine (Comandante 20 to 22)", c5:"19 to 22", setup:"Switch with Cafec Abaca or V60 paper.",
+ steps:[{t:0,v:"open",a:"Pour 65 g."},{t:30,v:"closed",a:"Close. Pour to 130 g."},{t:120,v:"open",a:"Open and drain."},{t:150,a:"Done, about 2:30."}],
+ notes:"For more coffee, scale up and grind slightly coarser.",
+ src:"https://www.youtube.com/watch?v=9zU0FybizSc", verified:true},
+{id:"hoffmann-switch", dev:"sw", kind:"expert", name:"Daily driver technique", author:"James Hoffmann", cred:"World Barista Champion 2007",
+ dose:15, water:250, temp:"Not stated", grind:"Pretty fine", c5:"16 to 18", setup:"Switch with paper filter.",
+ steps:[{t:0,v:"closed",a:"Bloom with about 30 g, swirl."},{t:30,v:"closed",a:"Fill to 250 g. The exact time is not stated."},{t:120,v:"open",a:"Small stir, then open."}],
+ notes:"A technique from his 2020 video, not a full recipe. Drawdown took about 2:10 with Hario papers. Recipes online with 93 °C and 330 ml do not match the video.",
+ src:"https://www.youtube.com/watch?v=QjIvN8mlK9Y", verified:true},
+{id:"hario-official", dev:"sw", kind:"expert", name:"Official Switch 02 recipe", author:"Hario", cred:"Printed manual",
+ dose:20, water:240, temp:"Hot water, no number", grind:"Medium fine", c5:"19 to 21", setup:"V60 02 paper.",
+ steps:[{t:0,v:"closed",a:"Pour all 240 g."},{t:120,v:"open",a:"Open and drain. Stir first for a stronger cup."}],
+ notes:"The simplest baseline to calibrate grind against.",
+ src:"https://www.hario.com/product/SSD-200.pdf", verified:true},
+
+/* Switch champions */
+{id:"winton-immersion", dev:"sw", kind:"champ", name:"Full immersion", author:"Matt Winton", cred:"World Brewers Cup Champion 2021",
+ dose:16, water:240, temp:"93 °C", grind:"Similar to V60", c5:"22 to 24", setup:"Rinse and preheat, drain the rinse water.",
+ steps:[{t:0,v:"closed",a:"Pour all 240 g at once."},{t:240,v:"open",a:"Open with a small swirl."},{t:300,v:"closed",a:"Close to stop, about a minute of drawdown."}],
+ notes:"For the 03 size use 24 g to 360 g.",
+ src:"https://www.youtube.com/watch?v=g9diFrEkn3M", verified:true},
+{id:"winton-bloom", dev:"sw", kind:"champ", name:"Bloom then immersion", author:"Matt Winton", cred:"World Brewers Cup Champion 2021",
+ dose:16, water:240, temp:"93 °C", grind:"Similar to V60", c5:"22 to 24", setup:"Rinse and preheat, drain the rinse water.",
+ steps:[{t:0,v:"open",a:"Pour 50 g."},{t:30,v:"closed",a:"Close. Pour to 240 g."},{t:180,v:"open",a:"Open with a small swirl."}],
+ notes:"Same video as the full immersion version.",
+ src:"https://www.youtube.com/watch?v=g9diFrEkn3M", verified:true},
+{id:"fukahori", dev:"sw", kind:"champ", name:"MAME house recipe", author:"Emi Fukahori", cred:"World Brewers Cup Champion 2018",
+ dose:14, water:200, temp:"93 °C", grind:"Comandante 25", c5:"24 to 26", setup:"V60 02 paper. Rinse with the valve open, then close and empty the server.",
+ steps:[{t:0,v:"closed",a:"Pour 50 g."},{t:30,v:"open",a:"Open. One continuous centre pour to 200 g, finish by 1:10."},{t:140,v:"closed",a:"Once drained, close to cut the last drops."}],
+ notes:"94 to 95 °C for brighter, 85 to 92 °C to tone it down. Coarser if bitter, finer if sour.",
+ src:"https://www.youtube.com/watch?v=3euEkTBxtEk", verified:true},
+{id:"sherry-hsu", dev:"sw", kind:"champ", name:"Lazy daily recipe", author:"Sherry Hsu", cred:"World Brewers Cup Champion 2022",
+ dose:16, water:240, temp:"90 °C", grind:"Medium coarse (1Zpresso K-Ultra 7)", c5:"26 to 29", setup:"Paper filter, rinsed.",
+ steps:[{t:0,v:"open",a:"Circular pour to 50 g."},{t:30,v:"open",a:"Pour to 150 g."},{t:60,v:"closed",a:"Close. Centre pour to 240 g."},{t:90,v:"open",a:"Open and drain."},{t:120,a:"Done, 1:45 to 2:00."}],
+ notes:"Filmed on The Coffee Chronicler's channel.",
+ src:"https://www.youtube.com/watch?v=wCNxPYyGWoo", verified:true},
+{id:"boen", dev:"sw", kind:"champ", name:"World Brewers Cup 2021 Switch", author:"Ole Kristian Bøen", cred:"Norwegian Brewers Cup Champion 2020",
+ dose:16.5, water:240, temp:"96 °C", grind:"Medium fine", c5:"19 to 21", setup:"Switch 02 with V60 02 paper.",
+ steps:[{t:0,v:"closed",a:"Pour 50 g."},{t:40,v:"open",a:"Open. Pour 100 g to the centre."},{t:90,v:"closed",a:"Close. Pour 90 g in circles."},{t:130,v:"open",a:"Open and drain."},{t:190,a:"Done, 3:00 to 3:15."}],
+ notes:"Built for a natural Geisha.",
+ src:"https://www.hario-europe.com/blogs/hario-community/ole-kristian-boens-switch-recipe", verified:true},
+{id:"wibawa", dev:"sw", kind:"champ", name:"Double Immersion", author:"Ryan Wibawa", cred:"Indonesian Brewers Cup Champion 2016 and 2024",
+ dose:15, water:220, temp:"86 °C, then 92 °C", grind:"Medium", c5:"23 to 25", setup:"Two kettles, or reheat between stages.",
+ steps:[{t:0,v:"closed",a:"Pour 100 g at 86 °C. Bloom."},{t:40,v:"open",a:"Open. It drains in about 5 seconds."},{t:45,v:"closed",a:"Close. Pour 120 g at 92 °C."},{t:110,v:"open",a:"Open and drain fully. Swirl the cup before serving."}],
+ notes:"Timings here run on one clock. His recipe restarts the timer at the second pour.",
+ src:"https://www.hario-europe.com/blogs/hario-community/interview-with-ryan-wibawa-switch-recipe", verified:true}
+];
+const byId = Object.fromEntries(R.map(r=>[r.id,r]));
+const DEV = {ap:"AeroPress", sw:"Switch"};
+
+/* ---------- helpers ---------- */
+const $ = s=>document.querySelector(s);
+const esc = s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const mmss = s=>{s=Math.max(0,Math.floor(s));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
+const ratio = (d,w)=>d&&w?"1:"+(w/d).toFixed(1).replace(/\.0$/,""):"–";
+const parseTime = v=>{if(!v)return null;const m=String(v).trim().match(/^(\d+):(\d{1,2})$/);if(m)return +m[1]*60+ +m[2];const n=parseFloat(v);return isNaN(n)?null:n};
+function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,2200)}
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function stats(items){return `<div class="stats">${items.map(([k,v])=>`<div class="stat"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join("")}</div>`}
+function recipeLabel(r){return `${r.author}, ${r.name}`}
+
+/* ---------- tabs ---------- */
+function showTab(name){
+  document.querySelectorAll(".seg button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===name)));
+  ["brew","recipes","log","beans","grind"].forEach(n=>$("#p-"+n).hidden=n!==name);
+  lsSet("tab",name);
+}
+document.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",()=>showTab(b.dataset.tab)));
+
+function chipGroup(el,onChange){
+  el.addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;
+    el.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed",String(c===b)));onChange(b.dataset.v)});
+}
+
+/* ---------- storage ---------- */
+let brews = lsGet("brews-local",[]);
+let beans = lsGet("beans-local",[]);
+let db = null;
+function renderAll(){renderHistory();renderRecipes();renderBeans();fillBeanPick();if(document.getElementById("backupNote"))backupNote()}
+function setSync(on,text){$("#syncDot").classList.toggle("on",on);$("#syncText").textContent=text}
+setSync(true,"Saved on this phone");
+(async()=>{try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){}})();
+
+async function saveBrew(obj){
+  if(db){await db.collection("brews").doc(obj.id).set(obj)}
+  else{brews=brews.filter(b=>b.id!==obj.id).concat(obj);lsSet("brews-local",brews);renderAll()}
+}
+async function saveBean(obj){
+  if(db){await db.collection("beans").doc(obj.id).set(obj)}
+  else{beans=beans.filter(b=>b.id!==obj.id).concat(obj);lsSet("beans-local",beans);renderAll()}
+}
+async function deleteBrew(id){
+  if(db){await db.collection("brews").doc(id).delete()}
+  else{brews=brews.filter(b=>b.id!==id);lsSet("brews-local",brews);renderAll()}
+}
+
+/* ---------- recipes tab ---------- */
+let fDev="all", fKind="all";
+chipGroup($("#devFilter"),v=>{fDev=v;renderRecipes()});
+chipGroup($("#kindFilter"),v=>{fKind=v;renderRecipes()});
+
+function stepsHtml(r){
+  return `<ol class="steps">${r.steps.map(s=>`<li><span class="t">${mmss(s.t)}</span><span>${s.v?`<span class="valve ${s.v}">${s.v==="open"?"OPEN":"CLOSED"}</span>`:""}${esc(s.a)}</span></li>`).join("")}</ol>`;
+}
+function bestFor(id){
+  const mine = brews.filter(b=>b.recipe===id);
+  if(!mine.length) return "";
+  const best = mine.slice().sort((a,b)=>(b.score||0)-(a.score||0))[0];
+  return `<div class="mine">You: ${mine.length} brew${mine.length>1?"s":""}. Best ${best.score}/10${best.clicks?` at ${best.clicks} clicks`:""}${best.temp?`, ${best.temp} °C`:""}.</div>`;
+}
+function renderRecipes(){
+  const list = R.filter(r=>(fDev==="all"||r.dev===fDev)&&(fKind==="all"||r.kind===fKind));
+  $("#recipeList").innerHTML = list.map(r=>`
+    <article class="recipe ${r.dev}">
+      <div class="head">
+        <div class="row" style="gap:6px"><span class="tag ${r.dev}">${DEV[r.dev]}</span><span class="tag plain">${r.kind==="champ"?"Champion":"Expert"}</span>${r.verified?"":`<span class="tag warn">Unverified</span>`}</div>
+        <h3>${esc(r.name)}</h3>
+        <div class="by">${esc(r.author)}. ${esc(r.cred)}</div>
+        ${stats([["Coffee",r.dose+" g"],["Water",r.water+" g"],["Ratio",ratio(r.dose,r.water)],["C5 est.",r.c5]])}
+        ${bestFor(r.id)}
+        <div class="row"><button class="btn small primary" data-brew="${r.id}">Brew this</button><button class="btn small" data-log="${r.id}">Log this</button></div>
+      </div>
+      <details>
+        <summary>Method and source</summary>
+        <div class="body">
+          <dl class="kv">
+            <dt>Water temp</dt><dd>${esc(r.temp)}</dd>
+            <dt>Grind</dt><dd>${esc(r.grind)}</dd>
+            ${r.bypass?`<dt>Bypass</dt><dd>${esc(r.bypass)}${typeof r.bypass==="number"?" g":""}</dd>`:""}
+            <dt>Setup</dt><dd>${esc(r.setup)}</dd>
+          </dl>
+          ${stepsHtml(r)}
+          <p class="muted" style="margin:0;font-size:13px">${esc(r.notes)}</p>
+          <a href="${esc(r.src)}" target="_blank" rel="noopener" style="font-size:13px">Source</a>
+        </div>
+      </details>
+    </article>`).join("");
+}
+$("#recipeList").addEventListener("click",e=>{
+  const b=e.target.closest("[data-brew]"); if(b){pickBrew(b.dataset.brew);showTab("brew");window.scrollTo(0,0);return}
+  const l=e.target.closest("[data-log]"); if(l){prefillFromRecipe(l.dataset.log);showTab("log");window.scrollTo(0,0)}
+});
+
+/* ---------- brew tab ---------- */
+const pick = $("#brewPick");
+pick.innerHTML = ["ap","sw"].map(d=>`<optgroup label="${DEV[d]}">${R.filter(r=>r.dev===d).map(r=>`<option value="${r.id}">${esc(recipeLabel(r))}</option>`).join("")}</optgroup>`).join("");
+let cur = byId[lsGet("brewRecipe","chronicler-5050")] || R[0];
+let running=false, startAt=0, elapsed=0, raf=null, lastIdx=-1, audio=null, wake=null;
+
+function pickBrew(id){cur=byId[id]||R[0];pick.value=cur.id;lsSet("brewRecipe",cur.id);resetTimer();renderBrew()}
+pick.addEventListener("change",()=>pickBrew(pick.value));
+
+function renderBrew(){
+  $("#brewStats").innerHTML = stats([["Coffee",cur.dose+" g"],["Water",cur.water+" g"],["Temp",cur.temp],["C5 est.",cur.c5]]);
+  $("#brewPrep").textContent = cur.setup;
+  $("#brewSteps").innerHTML = cur.steps.map((s,i)=>`<li data-i="${i}"><span class="t">${mmss(s.t)}</span><span>${s.v?`<span class="valve ${s.v}">${s.v==="open"?"OPEN":"CLOSED"}</span>`:""}${esc(s.a)}</span></li>`).join("");
+  tick(true);
+}
+function stepIndex(t){let i=-1;cur.steps.forEach((s,k)=>{if(t>=s.t)i=k});return i}
+function beep(){
+  try{audio=audio||new (window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();
+    o.frequency.value=880;g.gain.setValueAtTime(.001,audio.currentTime);g.gain.exponentialRampToValueAtTime(.25,audio.currentTime+.02);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.35);
+    o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+.4)}catch(e){}
+  try{navigator.vibrate&&navigator.vibrate(120)}catch(e){}
+}
+function tick(force){
+  const t = running ? (performance.now()-startAt)/1000 : elapsed;
+  $("#clock").textContent = mmss(t);
+  const i = stepIndex(t);
+  if(i!==lastIdx||force){
+    if(running&&i!==lastIdx&&i>=0)beep();
+    lastIdx=i;
+    document.querySelectorAll("#brewSteps li").forEach((li,k)=>{li.classList.toggle("done",k<i);li.classList.toggle("active",k===i)});
+  }
+  const next = cur.steps[i+1];
+  const now = $("#now");
+  if(!running&&t===0){now.classList.remove("live");now.querySelector(".lbl").textContent="First step";$("#nowTxt").textContent=cur.steps[0].a}
+  else{
+    now.classList.toggle("live",running);
+    const step = cur.steps[Math.max(i,0)];
+    now.querySelector(".lbl").textContent = next?`Now. Next in ${mmss(next.t-t+0.999)}`:"Last step";
+    $("#nowTxt").textContent = (step.v?(step.v==="open"?"Valve open. ":"Valve closed. "):"")+step.a;
+  }
+  if(running)raf=requestAnimationFrame(()=>tick(false));
+}
+async function startStop(){
+  if(running){elapsed=(performance.now()-startAt)/1000;running=false;cancelAnimationFrame(raf);$("#startBtn").textContent="Resume";releaseWake();tick(true);return}
+  running=true;startAt=performance.now()-elapsed*1000;$("#startBtn").textContent="Pause";
+  try{wake=await navigator.wakeLock?.request("screen")}catch(e){}
+  if(elapsed===0)beep();
+  tick(true);
+}
+function releaseWake(){try{wake&&wake.release()}catch(e){}wake=null}
+function resetTimer(){running=false;cancelAnimationFrame(raf);elapsed=0;lastIdx=-1;$("#startBtn").textContent="Start";releaseWake();}
+$("#startBtn").addEventListener("click",startStop);
+$("#resetBtn").addEventListener("click",()=>{resetTimer();tick(true)});
+$("#logThisBtn").addEventListener("click",()=>{
+  const t = running ? (performance.now()-startAt)/1000 : elapsed;
+  prefillFromRecipe(cur.id); if(t>0)$("#fTime").value=mmss(t);
+  showTab("log");window.scrollTo(0,0);
+});
+
+/* ---------- log form ---------- */
+const fRecipe=$("#fRecipe");
+function fillRecipeOptions(dev){
+  fRecipe.innerHTML = `<option value="">Own recipe</option>`+R.filter(r=>r.dev===dev).map(r=>`<option value="${r.id}">${esc(recipeLabel(r))}</option>`).join("");
+}
+function today(){const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
+let editingId=null;
+function firstNum(s){const m=String(s||"").match(/\d+(\.\d+)?/);return m?m[0]:""}
+function prefillFromRecipe(id){
+  const r=byId[id]; if(!r)return;
+  resetForm(false);
+  $("#fDevice").value=r.dev;fillRecipeOptions(r.dev);fRecipe.value=r.id;
+  $("#fDose").value=r.dose;$("#fWater").value=r.water;$("#fTemp").value=firstNum(r.temp);$("#fClicks").value=firstNum(r.c5);
+  const last=r.steps[r.steps.length-1];$("#fTime").value=mmss(last.t);
+  updateRatio();
+}
+function resetForm(clearCoffee=true){
+  editingId=null;$("#formTitle").textContent="New brew";$("#saveBtn").textContent="Save brew";
+  const keepBean=$("#fBeanPick").value;
+  $("#logForm").reset();
+  $("#fDate").value=today();fillRecipeOptions($("#fDevice").value);
+  const act=activeBeans();
+  fillBeanPick(clearCoffee||!keepBean||keepBean==="__new" ? (act[0]?act[0].id:"__new") : keepBean);
+  $("#fNotes").placeholder="Jasmine, peach, clean finish";setFlav([]);
+  ["Sweet","Acid","Body","Score"].forEach(k=>$("#v"+k).textContent=$("#f"+k).value);
+  updateHint();updateRatio();
+}
+$("#fDevice").addEventListener("change",()=>fillRecipeOptions($("#fDevice").value));
+fRecipe.addEventListener("change",()=>{if(fRecipe.value)prefillFromRecipe(fRecipe.value)});
+["Sweet","Acid","Body","Score"].forEach(k=>$("#f"+k).addEventListener("input",()=>$("#v"+k).textContent=$("#f"+k).value));
+function updateRatio(){const d=+$("#fDose").value,w=+$("#fWater").value;$("#ratioOut").textContent=d&&w?`Ratio ${ratio(d,w)}`:""}
+$("#fDose").addEventListener("input",updateRatio);$("#fWater").addEventListener("input",updateRatio);
+const HINTS={
+  sour:"Next time: 1 to 2 clicks finer, or 2 to 3 °C hotter. Change one of the two.",
+  bitter:"Next time: 1 to 2 clicks coarser, or 2 to 3 °C cooler. Press gently and stop at the hiss.",
+  weak:"Next time: raise the dose by 1 g, or use less bypass water.",
+  strong:"Next time: add bypass water to the cup, or lower the dose by 1 g.",
+  balanced:"Keep this. Note the clicks so you can repeat it."
+};
+function updateHint(){const v=$("#fTaste").value;$("#tasteHint").hidden=!v;$("#tasteHint").textContent=HINTS[v]||""}
+$("#fTaste").addEventListener("change",()=>{updateHint();if(!$("#fNext").value&&HINTS[$("#fTaste").value]&&$("#fTaste").value!=="balanced")$("#fNext").value=HINTS[$("#fTaste").value].replace("Next time: ","")});
+$("#clearForm").addEventListener("click",()=>resetForm(true));
+
+$("#logForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const num=id=>{const v=$(id).value;return v===""?null:+v};
+  $("#saveBtn").disabled=true;
+  try{
+    const bn=await resolveBeanForSave();
+    const obj={
+      id: editingId || newId(),
+      date:$("#fDate").value, device:$("#fDevice").value, recipe:fRecipe.value,
+      beanId:bn?bn.id:"", bean:bn?bn.name:"", roaster:bn?bn.roaster||"":"", roast:bn?bn.roast||"":"", process:bn?bn.process||"":"", roastDate:bn?bn.roastDate||"":"",
+      clicks:num("#fClicks"), dose:num("#fDose"), water:num("#fWater"), temp:num("#fTemp"), time:parseTime($("#fTime").value),
+      taste:$("#fTaste").value, sweet:+$("#fSweet").value, acid:+$("#fAcid").value, body:+$("#fBody").value, score:+$("#fScore").value,
+      flavours:getFlav(), notes:$("#fNotes").value.trim(), next:$("#fNext").value.trim(),
+      created: editingId ? (brews.find(b=>b.id===editingId)?.created||Date.now()) : Date.now()
+    };
+    const wasEdit=!!editingId;
+    await saveBrew(obj);toast(wasEdit?"Brew updated":"Brew saved");resetForm(true);
+  }
+  catch(err){toast(err&&err.code==="quota_exceeded"?"Log is full. Delete old brews to save new ones.":"Could not save. Check your connection and try again.")}
+  finally{$("#saveBtn").disabled=false}
+});
+
+/* ---------- flavours ---------- */
+const FLAV=["Floral","Citrus","Berry","Stone fruit","Tropical","Apple, pear","Grape, wine","Tea like","Caramel","Chocolate","Nutty","Spice","Juicy","Clean","Muddy","Astringent"];
+$("#fFlav").innerHTML=FLAV.map(f=>`<button type="button" class="fchip" aria-pressed="false" data-f="${esc(f)}">${esc(f)}</button>`).join("");
+$("#fFlav").addEventListener("click",e=>{const b=e.target.closest(".fchip");if(b)b.setAttribute("aria-pressed",String(b.getAttribute("aria-pressed")!=="true"))});
+function getFlav(){return [...document.querySelectorAll("#fFlav .fchip[aria-pressed=true]")].map(b=>b.dataset.f)}
+function setFlav(list){const set=new Set(list||[]);document.querySelectorAll("#fFlav .fchip").forEach(b=>b.setAttribute("aria-pressed",String(set.has(b.dataset.f))))}
+
+/* ---------- history ---------- */
+let hDev="all";
+chipGroup($("#histFilter"),v=>{hDev=v;renderHistory()});
+const TASTE={sour:"Sour",balanced:"Balanced",bitter:"Bitter",weak:"Weak",strong:"Strong"};
+function daysOff(b){if(!b.roastDate||!b.date)return null;return Math.round((new Date(b.date)-new Date(b.roastDate))/864e5)}
+function entryHtml(b,example){
+  const r=byId[b.recipe];const d=daysOff(b);
+  const bits=[b.dose!=null&&b.dose+" g",b.water!=null&&b.water+" g",b.dose&&b.water&&ratio(b.dose,b.water),b.temp!=null&&b.temp+" °C",b.clicks!=null&&b.clicks+" clicks",b.time!=null&&mmss(b.time)].filter(Boolean).join("  ·  ");
+  return `<article class="entry${example?" example":""}">
+    <div class="row between" style="align-items:flex-start">
+      <div style="min-width:0;flex:1">
+        <div class="row" style="gap:6px"><span class="tag ${b.device}">${DEV[b.device]}</span>${b.taste?`<span class="tag plain">${TASTE[b.taste]}</span>`:""}${example?`<span class="tag plain">Example</span>`:""}</div>
+        <h3 style="margin-top:6px">${esc(b.bean||"Unnamed coffee")}${b.roaster?` <span class="muted" style="font-weight:400;font-family:var(--sans);font-size:14px">${esc(b.roaster)}</span>`:""}</h3>
+        <div class="meta">${esc(b.date)}${r?`. ${esc(recipeLabel(r))}`:". Own recipe"}${b.roast?`. ${esc(b.roast)}`:""}${b.process?`, ${esc(b.process.toLowerCase())}`:""}${d!=null?`. ${d} days off roast`:""}</div>
+      </div>
+      <div class="score">${b.score}<span class="muted" style="font-size:14px;font-weight:600">/10</span></div>
+    </div>
+    <div class="line">${esc(bits)}</div>
+    <div class="meta">Sweetness ${b.sweet}, acidity ${b.acid}, body ${b.body}</div>
+    ${b.flavours&&b.flavours.length?`<div class="row" style="gap:4px">${b.flavours.map(f=>`<span class="tag plain">${esc(f)}</span>`).join("")}</div>`:""}
+    ${b.notes?`<div>${esc(b.notes)}</div>`:""}
+    ${b.next?`<div class="mine">Next time: ${esc(b.next)}</div>`:""}
+    ${example?"":`<div class="row"><button class="btn small" data-again="${b.id}">Brew again</button><button class="btn small" data-edit="${b.id}">Edit</button><button class="btn small danger" data-del="${b.id}">Delete</button></div>`}
+  </article>`;
+}
+function renderHistory(){
+  const all=brews.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.created||0)-(a.created||0));
+  const list=all.filter(b=>hDev==="all"||b.device===hDev);
+  const week=all.filter(b=>b.date&&(new Date(today())-new Date(b.date))/864e5<7).length;
+  const avg=all.length?(all.reduce((s,b)=>s+(b.score||0),0)/all.length).toFixed(1):"–";
+  const byR={};all.forEach(b=>{if(!b.recipe)return;(byR[b.recipe]=byR[b.recipe]||[]).push(b.score||0)});
+  let top="–",topAvg=-1;Object.entries(byR).forEach(([k,v])=>{const a=v.reduce((s,x)=>s+x,0)/v.length;if(a>topAvg){topAvg=a;top=byId[k]?byId[k].author:"–"}});
+  $("#logStats").innerHTML=stats([["Brews",all.length],["This week",week],["Avg score",avg],["Top recipe",top]]).replace(/^<div class="stats">|<\/div>$/g,"");
+  if(!all.length){
+    $("#history").innerHTML=`<p class="muted" style="margin:0">No brews yet. Here is what an entry looks like.</p>`+entryHtml({device:"sw",recipe:"chronicler-5050",bean:"Ethiopia Guji, washed",roaster:"Example roaster",roast:"Light",process:"Washed",date:today(),dose:20,water:320,temp:93,clicks:16,time:185,taste:"sour",sweet:3,acid:4,body:2,score:6,notes:"Bright lemon, a little thin at the finish.",next:"Two clicks finer"},true);
+    return;
+  }
+  $("#history").innerHTML=list.length?list.map(b=>entryHtml(b,false)).join(""):`<p class="muted" style="margin:0">No ${DEV[hDev]} brews yet.</p>`;
+}
+function loadBrew(b,edit){
+  resetForm(false);
+  $("#fDevice").value=b.device;fillRecipeOptions(b.device);fRecipe.value=b.recipe||"";
+  const set=(id,v)=>$(id).value=v??"";
+  const bb=beanForBrew(b);fillBeanPick(bb?bb.id:(activeBeans()[0]?activeBeans()[0].id:"__new"));
+  set("#fClicks",b.clicks);set("#fDose",b.dose);set("#fWater",b.water);set("#fTemp",b.temp);set("#fTime",b.time!=null?mmss(b.time):"");
+  if(edit){
+    editingId=b.id;$("#formTitle").textContent="Edit brew";$("#saveBtn").textContent="Update brew";
+    set("#fDate",b.date);set("#fTaste",b.taste);set("#fNotes",b.notes);set("#fNext",b.next);setFlav(b.flavours);
+    ["sweet","acid","body","score"].forEach(k=>{const K={sweet:"Sweet",acid:"Acid",body:"Body",score:"Score"}[k];$("#f"+K).value=b[k];$("#v"+K).textContent=b[k]});
+    updateHint();
+  }else if(b.next){$("#fNotes").placeholder="Last time: "+b.next}
+  updateRatio();showTab("log");window.scrollTo(0,0);
+}
+$("#history").addEventListener("click",async e=>{
+  const again=e.target.closest("[data-again]"),edit=e.target.closest("[data-edit]"),del=e.target.closest("[data-del]");
+  if(again||edit){const b=brews.find(x=>x.id===(again?again.dataset.again:edit.dataset.edit));if(b)loadBrew(b,!!edit)}
+  if(del){
+    if(del.dataset.armed){try{await deleteBrew(del.dataset.del);toast("Brew deleted")}catch(err){toast("Could not delete. Try again.")}}
+    else{del.dataset.armed="1";del.textContent="Tap again to delete";setTimeout(()=>{if(del.isConnected){delete del.dataset.armed;del.textContent="Delete"}},3000)}
+  }
+});
+
+/* ---------- beans ---------- */
+function newId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+const bkey=(n,r)=>(String(n||"").trim()+"|"+String(r||"").trim()).toLowerCase();
+function daysSince(date){if(!date)return null;return Math.round((new Date(today())-new Date(date))/864e5)}
+function allBeans(){
+  const saved=beans.slice();
+  const keys=new Set(saved.map(b=>bkey(b.name,b.roaster)));
+  const ids=new Set(saved.map(b=>b.id));
+  const virt={};
+  brews.slice().sort((a,b)=>(a.created||0)-(b.created||0)).forEach(br=>{
+    if(br.beanId&&ids.has(br.beanId))return;
+    if(!br.bean)return;
+    const k=bkey(br.bean,br.roaster);if(keys.has(k))return;
+    virt[k]={id:"v-"+encodeURIComponent(k),virtual:true,name:br.bean,roaster:br.roaster||"",roast:br.roast||"",process:br.process||"",roastDate:br.roastDate||"",bagWeight:null,created:br.created||0};
+  });
+  return saved.concat(Object.values(virt));
+}
+function brewsFor(b){
+  const ids=new Set(beans.map(x=>x.id));const k=bkey(b.name,b.roaster);
+  return brews.filter(br=>br.beanId===b.id||((!br.beanId||!ids.has(br.beanId))&&br.bean&&bkey(br.bean,br.roaster)===k));
+}
+function beanForBrew(br){const all=allBeans();return all.find(x=>br.beanId&&x.id===br.beanId)||all.find(x=>br.bean&&bkey(x.name,x.roaster)===bkey(br.bean,br.roaster))||null}
+function beanStats(b){
+  const l=brewsFor(b),count=l.length;
+  const avg=count?(l.reduce((s,x)=>s+(x.score||0),0)/count).toFixed(1):null;
+  const best=l.slice().sort((x,y)=>(y.score||0)-(x.score||0)||(y.created||0)-(x.created||0))[0]||null;
+  const used=l.filter(x=>(x.created||0)>=(b.restockedAt||0)).reduce((s,x)=>s+(x.dose||0),0);
+  const doses=l.filter(x=>x.dose);const avgDose=doses.length?doses.reduce((s,x)=>s+x.dose,0)/doses.length:null;
+  return {count,avg,best,used,avgDose,remaining:b.bagWeight?b.bagWeight-used:null};
+}
+function lastUsed(b){return brewsFor(b).reduce((m,x)=>Math.max(m,x.created||0),b.restockedAt||b.created||0)}
+function activeBeans(){return allBeans().filter(b=>!b.finished).sort((a,b)=>lastUsed(b)-lastUsed(a))}
+function restTag(d){return `<span class="rest ${d<7?"early":d<=35?"ok":""}">${d<7?`Day ${d}, still resting`:`Day ${d} off roast`}</span>`}
+function beanLabel(b){
+  const st=beanStats(b),d=daysSince(b.roastDate);
+  const bits=[b.name+(b.roaster?", "+b.roaster:"")];
+  if(d!=null)bits.push("day "+d);
+  if(st.remaining!=null)bits.push(Math.max(0,Math.round(st.remaining))+" g left");
+  return bits.join("  ·  ");
+}
+function fillBeanPick(keep){
+  const sel=$("#fBeanPick");const want=keep!==undefined?keep:sel.value;
+  const all=allBeans(),act=activeBeans();
+  let opts=act.map(b=>`<option value="${esc(b.id)}">${esc(beanLabel(b))}</option>`).join("");
+  const wb=all.find(b=>b.id===want);
+  if(wb&&wb.finished)opts=`<option value="${esc(wb.id)}">${esc(beanLabel(wb))} (finished)</option>`+opts;
+  sel.innerHTML=opts+`<option value="__new">Add a new coffee</option>`;
+  sel.value=[...sel.options].some(o=>o.value===want)?want:(act[0]?act[0].id:"__new");
+  $("#roasterList").innerHTML=[...new Set(all.map(b=>b.roaster).filter(Boolean))].map(r=>`<option value="${esc(r)}"></option>`).join("");
+  onBeanPick();
+}
+function onBeanPick(){
+  const v=$("#fBeanPick").value;$("#newBean").hidden=v!=="__new";
+  const b=allBeans().find(x=>x.id===v);$("#beanInfo").hidden=!b;
+  if(!b){$("#beanInfo").innerHTML="";return}
+  const st=beanStats(b),d=daysSince(b.roastDate);
+  $("#beanInfo").innerHTML=[
+    b.roast&&`<span>${esc(b.roast)}</span>`, b.process&&`<span>${esc(b.process)}</span>`, d!=null&&restTag(d),
+    st.remaining!=null&&`<span><b>${Math.max(0,Math.round(st.remaining))} g</b> left</span>`,
+    st.best&&`<span>Best <b>${st.best.score}/10</b>${st.best.clicks!=null?` at ${st.best.clicks} clicks`:""}</span>`,
+    `<button type="button" class="linkbtn" data-editbean="${esc(b.id)}">Edit coffee</button>`
+  ].filter(Boolean).join("");
+}
+$("#fBeanPick").addEventListener("change",()=>{
+  if($("#fBeanPick").value==="__new"){["#fBean","#fRoaster","#fRoastDate","#fBag","#fRoast","#fProcess"].forEach(i=>$(i).value="");setTimeout(()=>$("#fBean").focus(),0)}
+  onBeanPick();
+});
+$("#beanInfo").addEventListener("click",e=>{const b=e.target.closest("[data-editbean]");if(b){openBeanEditor(b.dataset.editbean);showTab("beans");window.scrollTo(0,0)}});
+function materialize(b,extra){
+  const nb=Object.assign({origin:"",variety:"",notes:"",bagWeight:null,finished:false},b,extra||{});
+  if(b.virtual){nb.id=newId();delete nb.virtual}
+  return nb;
+}
+async function resolveBeanForSave(){
+  const v=$("#fBeanPick").value;
+  if(v==="__new"){
+    const name=$("#fBean").value.trim();if(!name)return null;
+    const bag=$("#fBag").value;
+    const nb={id:newId(),name,roaster:$("#fRoaster").value.trim(),roast:$("#fRoast").value,process:$("#fProcess").value,roastDate:$("#fRoastDate").value,bagWeight:bag===""?null:+bag,origin:"",variety:"",notes:"",finished:false,created:Date.now()};
+    await saveBean(nb);return nb;
+  }
+  const b=allBeans().find(x=>x.id===v);if(!b)return null;
+  if(b.virtual){const nb=materialize(b);await saveBean(nb);return nb}
+  return b;
+}
+function beanCard(b){
+  const st=beanStats(b),d=daysSince(b.roastDate),best=st.best,br=best&&byId[best.recipe];
+  const left=st.remaining!=null?Math.max(0,st.remaining):null;
+  const pct=left!=null?Math.min(100,left/b.bagWeight*100):null;
+  return `<article class="bean">
+    <div class="row between" style="align-items:flex-start">
+      <div style="min-width:0;flex:1"><h3>${esc(b.name)}</h3><div class="muted" style="font-size:13px">${esc([b.roaster,b.origin,b.variety].filter(Boolean).join(". "))}</div></div>
+      ${st.count?`<div style="text-align:right"><div class="score" style="font-family:var(--display);font-size:24px;font-weight:800;line-height:1">${st.avg}</div><div class="muted" style="font-size:11px">avg of ${st.count}</div></div>`:""}
+    </div>
+    <div class="row" style="gap:6px">${b.roast?`<span class="tag plain">${esc(b.roast)}</span>`:""}${b.process?`<span class="tag plain">${esc(b.process)}</span>`:""}${d!=null?restTag(d):""}${b.virtual?`<span class="tag plain">From your log</span>`:""}</div>
+    ${b.notes?`<div style="font-size:14px">${esc(b.notes)}</div>`:""}
+    ${pct!=null?`<div><div class="row between" style="font-size:13px;margin-bottom:4px"><span class="muted">Bag</span><span class="mono">${Math.round(left)} of ${b.bagWeight} g${st.avgDose?`, about ${Math.floor(left/st.avgDose)} brews`:""}</span></div><div class="bar${pct<20?" low":""}"><i style="width:${pct}%"></i></div></div>`:(b.finished?"":`<div class="muted" style="font-size:13px">Add the bag weight to track what is left.</div>`)}
+    ${topFlav(b)}
+    ${dialTable(b)}
+    ${best?`<div class="mine">Best so far: ${best.score}/10, ${esc(br?recipeLabel(br):"own recipe")}${best.clicks!=null?`, ${best.clicks} clicks`:""}${best.temp!=null?`, ${best.temp} °C`:""}.</div>`:`<div class="muted" style="font-size:13px">No brews logged yet.</div>`}
+    <div class="row">
+      <button class="btn small primary" data-logbean="${esc(b.id)}">Log a brew</button>
+      ${best?`<button class="btn small" data-bestagain="${esc(best.id)}">Repeat best</button>`:""}
+      <button class="btn small" data-editbean="${esc(b.id)}">Edit</button>
+      ${b.finished?`<button class="btn small" data-restock="${esc(b.id)}">New bag</button>`:`<button class="btn small" data-finish="${esc(b.id)}">Bag finished</button>`}
+    </div>
+  </article>`;
+}
+function topFlav(b){
+  const c={};brewsFor(b).forEach(x=>(x.flavours||[]).forEach(f=>c[f]=(c[f]||0)+1));
+  const top=Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,4);
+  return top.length?`<div class="row" style="gap:4px"><span class="muted" style="font-size:12px">You taste</span>${top.map(([f])=>`<span class="tag plain">${esc(f)}</span>`).join("")}</div>`:"";
+}
+function dialTable(b){
+  const l=brewsFor(b).slice().sort((x,y)=>(x.date||"").localeCompare(y.date||"")||(x.created||0)-(y.created||0));
+  if(l.length<2)return "";
+  const bestScore=Math.max(...l.map(x=>x.score||0));
+  const rows=l.slice(-8).map(x=>{const r=byId[x.recipe];return `<tr${(x.score||0)===bestScore?' style="font-weight:600"':""}><td class="num">${esc((x.date||"").slice(5))}</td><td>${esc(r?r.author.split(" ").slice(-1)[0]:"Own")}</td><td class="num">${x.clicks??"–"}</td><td class="num">${x.temp??"–"}</td><td>${x.taste?TASTE[x.taste]:"–"}</td><td class="num">${x.score}</td></tr>`}).join("");
+  return `<details><summary class="muted" style="font-size:13px;cursor:pointer;font-weight:600">Grind history (${l.length} brews)</summary><div class="scroll"><table class="dial"><thead><tr><th>Date</th><th>Recipe</th><th>Clicks</th><th>°C</th><th>Cup</th><th>Score</th></tr></thead><tbody>${rows}</tbody></table></div></details>`;
+}
+function renderBeans(){
+  const all=allBeans(),act=activeBeans(),fin=all.filter(b=>b.finished);
+  $("#beanList").innerHTML=act.length?act.map(beanCard).join(""):`<p class="muted" style="margin:0">No coffees saved yet. Add the bag you are brewing now and it will appear in the Coffee dropdown when you log.</p>`;
+  $("#finWrap").hidden=!fin.length;$("#finSum").textContent=`Finished bags (${fin.length})`;$("#finList").innerHTML=fin.map(beanCard).join("");
+}
+let beanEditing=null,beanRestock=false;
+function openBeanEditor(id,restock){
+  const b=id?allBeans().find(x=>x.id===id):null;beanEditing=b;beanRestock=!!restock;
+  $("#beanEdTitle").textContent=!b?"Add coffee":restock?`New bag of ${b.name}`:`Edit ${b.name}`;
+  $("#beanSave").textContent=restock?"Start new bag":"Save coffee";
+  const set=(i,v)=>$(i).value=v??"";
+  set("#bName",b&&b.name);set("#bRoaster",b&&b.roaster);set("#bOrigin",b&&b.origin);set("#bVariety",b&&b.variety);set("#bRoast",b&&b.roast);set("#bProcess",b&&b.process);
+  set("#bRoastDate",restock?"":b&&b.roastDate);set("#bBag",b&&b.bagWeight);set("#bNotes",b&&b.notes);
+  $("#beanEditor").hidden=false;setTimeout(()=>$(restock?"#bRoastDate":"#bName").focus(),0);
+}
+$("#addBeanBtn").addEventListener("click",()=>openBeanEditor(null));
+$("#beanCancel").addEventListener("click",()=>{$("#beanEditor").hidden=true});
+$("#beanForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const bag=$("#bBag").value;
+  const fields={name:$("#bName").value.trim(),roaster:$("#bRoaster").value.trim(),origin:$("#bOrigin").value.trim(),variety:$("#bVariety").value.trim(),
+    roast:$("#bRoast").value,process:$("#bProcess").value,roastDate:$("#bRoastDate").value,bagWeight:bag===""?null:+bag,notes:$("#bNotes").value.trim()};
+  const obj=beanEditing?materialize(beanEditing,fields):Object.assign({id:newId(),finished:false,created:Date.now()},fields);
+  if(beanRestock){obj.finished=false;obj.restockedAt=Date.now()}
+  $("#beanSave").disabled=true;
+  try{await saveBean(obj);toast(beanRestock?"New bag started":beanEditing?"Coffee updated":"Coffee saved");$("#beanEditor").hidden=true}
+  catch(err){toast("Could not save the coffee. Try again.")}
+  finally{$("#beanSave").disabled=false}
+});
+$("#p-beans").addEventListener("click",async e=>{
+  const t=e.target.closest("[data-logbean],[data-bestagain],[data-editbean],[data-finish],[data-restock]");if(!t)return;
+  const d=t.dataset;
+  if(d.logbean){resetForm(true);fillBeanPick(d.logbean);showTab("log");window.scrollTo(0,0)}
+  else if(d.bestagain){const b=brews.find(x=>x.id===d.bestagain);if(b)loadBrew(b,false)}
+  else if(d.editbean){openBeanEditor(d.editbean);window.scrollTo(0,0)}
+  else if(d.restock){openBeanEditor(d.restock,true);window.scrollTo(0,0)}
+  else if(d.finish){const b=allBeans().find(x=>x.id===d.finish);if(!b)return;
+    try{await saveBean(materialize(b,{finished:true}));toast("Moved to finished bags")}catch(err){toast("Could not update. Try again.")}}
+});
+
+/* ---------- export and backup ---------- */
+async function offerFile(name,text,type){
+  const blob=new Blob([text],{type});
+  try{const file=new File([blob],name,{type});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:name});return true}}
+  catch(e){if(e&&e.name==="AbortError")return false}
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);return true;
+}
+function plural(n,w){return n+" "+w+(n===1?"":"s")}
+function csvCell(v){v=v==null?"":Array.isArray(v)?v.join("; "):String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
+function backupNote(){
+  const t=lsGet("lastBackup",0);
+  $("#backupNote").textContent=!brews.length?"Nothing logged yet.":t?`Last backup ${plural(Math.floor((Date.now()-t)/864e5),"day")} ago. ${plural(brews.length,"brew")} and ${plural(beans.length,"coffee")} on this phone.`:`Not backed up yet. ${plural(brews.length,"brew")} saved only on this phone.`;
+}
+$("#exportBtn").addEventListener("click",async()=>{
+  const cols=["date","device","recipe","coffee","roaster","origin","variety","roast","process","roastDate","daysOffRoast","clicks","dose","water","ratio","temp","time","taste","sweet","acid","body","score","flavours","notes","next"];
+  const rows=brews.slice().sort((a,b)=>(a.date||"").localeCompare(b.date||"")).map(b=>{
+    const bn=beanForBrew(b)||{},r=byId[b.recipe];
+    const v={date:b.date,device:DEV[b.device],recipe:r?recipeLabel(r):"Own recipe",coffee:b.bean,roaster:b.roaster,origin:bn.origin,variety:bn.variety,roast:b.roast,process:b.process,roastDate:b.roastDate,daysOffRoast:daysOff(b),clicks:b.clicks,dose:b.dose,water:b.water,ratio:b.dose&&b.water?(b.water/b.dose).toFixed(1):"",temp:b.temp,time:b.time!=null?mmss(b.time):"",taste:b.taste,sweet:b.sweet,acid:b.acid,body:b.body,score:b.score,flavours:b.flavours,notes:b.notes,next:b.next};
+    return cols.map(c=>csvCell(v[c])).join(",");
+  });
+  await offerFile(`brew-log-${today()}.csv`,cols.join(",")+"\n"+rows.join("\n"),"text/csv");
+});
+$("#backupBtn").addEventListener("click",async()=>{
+  const data=JSON.stringify({app:"press-switch-log",version:1,exported:new Date().toISOString(),brews,beans},null,1);
+  if(await offerFile(`brew-log-backup-${today()}.json`,data,"application/json")){lsSet("lastBackup",Date.now());backupNote();toast("Backup ready")}
+});
+$("#restoreBtn").addEventListener("click",()=>$("#restoreFile").click());
+$("#restoreFile").addEventListener("change",async e=>{
+  const f=e.target.files&&e.target.files[0];e.target.value="";if(!f)return;
+  try{
+    const d=JSON.parse(await f.text());
+    const inB=Array.isArray(d)?d:(d.brews||[]),inC=Array.isArray(d)?[]:(d.beans||[]);
+    if(!inB.every(x=>x&&x.id)||!inC.every(x=>x&&x.id))throw new Error("shape");
+    const mB=new Map(brews.map(x=>[x.id,x]));inB.forEach(x=>mB.set(x.id,x));
+    const mC=new Map(beans.map(x=>[x.id,x]));inC.forEach(x=>mC.set(x.id,x));
+    brews=[...mB.values()];beans=[...mC.values()];lsSet("brews-local",brews);lsSet("beans-local",beans);
+    renderAll();resetForm(true);backupNote();toast(`Restored ${plural(inB.length,"brew")} and ${plural(inC.length,"coffee")}`);
+  }catch(err){toast("That file is not a Press and Switch Log backup.")}
+});
+
+/* ---------- boot ---------- */
+pick.value=cur.id;renderBrew();resetForm(true);renderAll();
+showTab(lsGet("tab","brew"));
+if("serviceWorker" in navigator&&location.protocol==="https:"){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
+</script>
+</body>
+</html>
