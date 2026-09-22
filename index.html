@@ -163,6 +163,21 @@ details.fin summary{cursor:pointer;font-weight:600;color:var(--muted);font-size:
 .fchip{border:1px solid var(--line);background:var(--bg);padding:5px 10px;border-radius:999px;font-size:13px;cursor:pointer}
 .fchip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 table.dial td,table.dial th{padding:5px 6px;font-size:13px}
+.small{font-size:12px}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(64px,1fr));gap:3px;background:var(--sunk);border:1px solid var(--line);border-radius:9px;padding:3px}
+.opt{border:0;background:transparent;padding:8px 4px;border-radius:6px;font-weight:600;font-size:13px;color:var(--muted);cursor:pointer}
+.opt[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.dotc{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;flex:none}
+.fchip{display:inline-flex;align-items:center}
+.fchip.wcat[aria-expanded="true"]{border-color:var(--ink);background:var(--surface)}
+.fchip.gchip{font-weight:600}
+.fchip b{margin-left:5px;font-family:var(--mono);font-size:11px}
+.wpanel{background:var(--sunk);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.wgroup{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tag.cup{background:var(--sunk);color:var(--ink)}
+.recipe.cup .head{border-left-color:var(--muted)}
+ol.plain{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.session{font-size:13px;border-top:1px dashed var(--line);padding-top:6px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;font-weight:600;font-size:14px;z-index:20}
 @media (prefers-reduced-motion:no-preference){.now{transition:background .25s}}
 </style>
@@ -183,7 +198,7 @@ table.dial td,table.dial th{padding:5px 6px;font-size:13px}
       <button role="tab" id="tab-recipes" aria-selected="false" data-tab="recipes">Recipes</button>
       <button role="tab" id="tab-log" aria-selected="false" data-tab="log">Log</button>
       <button role="tab" id="tab-beans" aria-selected="false" data-tab="beans">Beans</button>
-      <button role="tab" id="tab-grind" aria-selected="false" data-tab="grind">Grind</button>
+      <button role="tab" id="tab-guide" aria-selected="false" data-tab="guide">Guide</button>
     </div>
   </nav>
 
@@ -223,9 +238,10 @@ table.dial td,table.dial th{padding:5px 6px;font-size:13px}
         <button class="chip" aria-pressed="true" data-v="all">Everyone</button>
         <button class="chip" aria-pressed="false" data-v="expert">Experts</button>
         <button class="chip" aria-pressed="false" data-v="champ">Champions</button>
+        <button class="chip" aria-pressed="false" data-v="train">Training</button>
       </div>
     </div>
-    <p class="muted" style="margin:0;font-size:13px">Nobody here published Timemore C5 settings. The click numbers are estimates, converted from each recipe's own grinder at 31 µm per click counted from burr contact. The Grind tab shows the working.</p>
+    <p class="muted" style="margin:0;font-size:13px">Nobody here published Timemore C5 settings. The click numbers are estimates, converted from each recipe's own grinder at 31 µm per click counted from burr contact. The Guide tab shows the working.</p>
     <div class="panel" id="recipeList"></div>
   </section>
 
@@ -257,23 +273,23 @@ table.dial td,table.dial th{padding:5px 6px;font-size:13px}
         <div class="f"><label for="fWater">Water (g)</label><input id="fWater" type="number" inputmode="decimal" step="1" min="0"></div>
         <div class="f"><label for="fTemp">Water temp (°C)</label><input id="fTemp" type="number" inputmode="decimal" step="1" min="0" max="100"></div>
         <div class="f"><label for="fTime">Total time (m:ss)</label><input id="fTime" placeholder="3:00"></div>
-        <div class="f wide">
-          <label for="fTaste">How it tasted</label>
-          <select id="fTaste">
-            <option value="">Not set</option>
-            <option value="sour">Sour, thin, sharp</option>
-            <option value="balanced">Balanced, sweet</option>
-            <option value="bitter">Bitter, dry, harsh</option>
-            <option value="weak">Weak, watery</option>
-            <option value="strong">Too strong, heavy</option>
-          </select>
-        </div>
+        <div class="f wide"><label id="strLbl">Strength</label>
+          <div class="opts" id="fStrength" role="group" aria-labelledby="strLbl"><button type="button" class="opt" data-v="weak" aria-pressed="false">Weak</button><button type="button" class="opt" data-v="right" aria-pressed="false">Right</button><button type="button" class="opt" data-v="strong" aria-pressed="false">Strong</button></div>
+          <div class="muted small">How intense it is, like tea against espresso. Fixed with dose and water.</div></div>
+        <div class="f wide"><label id="extLbl">Extraction</label>
+          <div class="opts" id="fExtraction" role="group" aria-labelledby="extLbl"><button type="button" class="opt" data-v="sour" aria-pressed="false">Sour, thin</button><button type="button" class="opt" data-v="balanced" aria-pressed="false">Balanced</button><button type="button" class="opt" data-v="bitter" aria-pressed="false">Bitter</button><button type="button" class="opt" data-v="dry" aria-pressed="false">Drying</button></div>
+          <div class="muted small">Sour and thin means under extracted, bitter or drying means over. Fixed with grind and temperature. <button type="button" class="linkbtn small" data-guide="taste">How to tell them apart</button></div></div>
         <div class="hint wide" id="tasteHint" hidden></div>
         <div class="f"><label for="fSweet">Sweetness <span class="num" id="vSweet">3</span></label><input id="fSweet" type="range" min="1" max="5" value="3"><div class="scale"><span>low</span><span>high</span></div></div>
         <div class="f"><label for="fAcid">Acidity <span class="num" id="vAcid">3</span></label><input id="fAcid" type="range" min="1" max="5" value="3"><div class="scale"><span>flat</span><span>bright</span></div></div>
         <div class="f"><label for="fBody">Body <span class="num" id="vBody">3</span></label><input id="fBody" type="range" min="1" max="5" value="3"><div class="scale"><span>light</span><span>heavy</span></div></div>
         <div class="f"><label for="fScore">Overall <span class="num" id="vScore">7</span>/10</label><input id="fScore" type="range" min="1" max="10" value="7"><div class="scale"><span>1</span><span>10</span></div></div>
-        <div class="f wide"><label id="flavLbl">Flavours</label><div class="chips" id="fFlav" role="group" aria-labelledby="flavLbl"></div></div>
+        <div class="f wide"><label id="flavLbl">Flavours</label>
+          <div class="muted small">Start broad. Stopping at Fruity is a correct answer, go further only when you are sure.</div>
+          <div class="chips" id="wheelCats" role="group" aria-labelledby="flavLbl"></div>
+          <div class="wpanel" id="wheelPanel" hidden></div>
+          <div class="chips" id="flavPicked"></div></div>
+        <div class="f wide"><label id="mouthLbl">Body and finish</label><div class="chips" id="fMouth" role="group" aria-labelledby="mouthLbl"></div></div>
         <div class="f wide"><label for="fNotes">Tasting notes</label><textarea id="fNotes" placeholder="Jasmine, peach, clean finish"></textarea></div>
         <div class="f wide"><label for="fNext">Change next time</label><input id="fNext" placeholder="Two clicks finer"></div>
         <div class="row wide between">
@@ -331,7 +347,46 @@ table.dial td,table.dial th{padding:5px 6px;font-size:13px}
   </section>
 
   <!-- GRIND -->
-  <section class="panel" id="p-grind" hidden>
+  <section class="panel" id="p-guide" hidden>
+    <div class="chips" id="guideNav">
+      <button class="chip" aria-pressed="true" data-v="taste">Tasting</button>
+      <button class="chip" aria-pressed="false" data-v="grind">Grind</button>
+    </div>
+    <div class="panel" id="g-taste">
+      <div class="box panel">
+        <h2>Three things in every cup</h2>
+        <dl class="kv">
+          <dt>Taste</dt><dd>On the tongue. Sour, sweet, bitter, salty. There are only a handful.</dd>
+          <dt>Mouthfeel</dt><dd>In the whole mouth. Body from thin to heavy, texture from tea-like to syrupy, and dryness, which is a feeling rather than a taste.</dd>
+          <dt>Aroma</dt><dd>In the nose, including what rises from the back of your mouth. Everything with a name, like strawberry, jasmine or chocolate, lives here.</dd>
+        </dl>
+        <div class="hint"><strong>Try it:</strong> pinch your nose and sip. What you get is taste. Let go, and what arrives is aroma.</div>
+      </div>
+      <div class="box panel">
+        <h3>Three easy mix-ups</h3>
+        <dl class="kv">
+          <dt>Acidity or sour</dt><dd>Acidity is the pleasant brightness of a good apple. Sour is sharp, thin and pinching, and usually means under extraction. Light roasts should be bright, not sour.</dd>
+          <dt>Bitter or drying</dt><dd>Bitter is a taste at the back of the tongue, like tonic water. Drying is a furry feeling on the gums, like stewed black tea. Over extraction shows up as drying more often than bitter.</dd>
+          <dt>Strength or extraction</dt><dd>Weak or strong is a separate dial from sour or bitter. A cup can be weak and bitter, or strong and sour. That is why the log asks them as two questions.</dd>
+        </dl>
+      </div>
+      <div class="box panel">
+        <h3>How to taste a cup</h3>
+        <ol class="plain">
+          <li>Taste it hot, warm and near room temperature. Acidity and sweetness grow as it cools, and so do faults.</li>
+          <li>Slurp. It spreads the coffee and pushes aroma up to your nose.</li>
+          <li>Acidity: is there any, and is it lemon sharp, apple crisp or grape juicy?</li>
+          <li>Sweetness: none, some, or like fruit juice?</li>
+          <li>Body: tea-like, silky or heavy?</li>
+          <li>Finish: clean, or drying and lingering?</li>
+          <li>Only then, what it reminds you of. Start broad on the flavour wheel and narrow down only if you are sure.</li>
+        </ol>
+        <p class="muted" style="margin:0;font-size:13px">Roaster notes are hints, not a test. If the bag says guava and you get sweet tropical fruit, you are tasting the same thing with fewer words.</p>
+      </div>
+      <h2 style="margin-top:6px">Exercises</h2>
+      <div class="panel" id="exList"></div>
+    </div>
+    <div class="panel" id="g-grind" hidden>
     <div class="box panel">
       <h2>Your grinder: Timemore C5</h2>
       <div class="stats">
@@ -381,6 +436,7 @@ table.dial td,table.dial th{padding:5px 6px;font-size:13px}
         <dt>Switch drains slowly</dt><dd>Grind coarser. Fines and very fine settings stall the drawdown and push the cup bitter.</dd>
       </dl>
       <p class="muted" style="margin:0;font-size:13px">Change one thing per brew and write it in "Change next time", so the log can tell you what worked.</p>
+    </div>
     </div>
   </section>
 </div>
@@ -541,10 +597,29 @@ const R = [
  dose:15, water:220, temp:"86 °C, then 92 °C", grind:"Medium", c5:"23 to 25", setup:"Two kettles, or reheat between stages.",
  steps:[{t:0,v:"closed",a:"Pour 100 g at 86 °C. Bloom."},{t:40,v:"open",a:"Open. It drains in about 5 seconds."},{t:45,v:"closed",a:"Close. Pour 120 g at 92 °C."},{t:110,v:"open",a:"Open and drain fully. Swirl the cup before serving."}],
  notes:"Timings here run on one clock. His recipe restarts the timer at the second pour.",
- src:"https://www.hario-europe.com/blogs/hario-community/interview-with-ryan-wibawa-switch-recipe", verified:true}
+ src:"https://www.hario-europe.com/blogs/hario-community/interview-with-ryan-wibawa-switch-recipe", verified:true},
+
+/* Training */
+{id:"train-under", dev:"ap", kind:"train", name:"Extraction triangle 1: under", author:"Training", cred:"Brew all three back to back with one coffee",
+ dose:15, water:250, temp:"93 °C", grind:"10 clicks coarser than your usual", c5:"about 30", setup:"Standard. One paper filter. Label the cup 1.",
+ steps:[{t:0,a:"Pour 250 g and insert the plunger."},{t:60,a:"Press quickly, about 15 seconds."},{t:75,a:"Done. Set it aside to cool."}],
+ notes:"Expect sour, thin and a little salty. That is under extraction.", src:"", verified:true},
+{id:"train-mid", dev:"ap", kind:"train", name:"Extraction triangle 2: middle", author:"Training", cred:"The reference cup",
+ dose:15, water:250, temp:"93 °C", grind:"Your usual setting", c5:"about 20", setup:"Standard. One paper filter. Label the cup 2.",
+ steps:[{t:0,a:"Pour 250 g and insert the plunger."},{t:120,a:"Swirl gently."},{t:150,a:"Press gently, about 30 seconds."},{t:180,a:"Done."}],
+ notes:"Taste this one first, then compare the other two against it.", src:"", verified:true},
+{id:"train-over", dev:"ap", kind:"train", name:"Extraction triangle 3: over", author:"Training", cred:"Brew all three back to back with one coffee",
+ dose:15, water:250, temp:"93 °C", grind:"10 clicks finer than your usual", c5:"about 10", setup:"Standard. One paper filter. Label the cup 3.",
+ steps:[{t:0,a:"Pour 250 g, stir 10 times, insert the plunger."},{t:120,a:"Stir 10 more times."},{t:240,a:"Press all the way, through the hiss."},{t:270,a:"Done."}],
+ notes:"Expect hollow, bitter and drying on the gums. That is over extraction.", src:"", verified:true},
+{id:"train-cupping", dev:"cup", kind:"train", name:"Home cupping", author:"Training", cred:"SCA cupping ratio",
+ dose:8.25, water:150, temp:"93 °C", grind:"Medium coarse", c5:"about 26", setup:"One cup per coffee, ground straight into the cup. Two spoons and a glass of rinse water.",
+ steps:[{t:0,a:"Smell the dry grounds. Pour 150 g water into each cup, filling to the brim."},{t:240,a:"Break the crust: push the grounds back with a spoon three times and smell the steam."},{t:270,a:"Skim off the floating grounds and foam with two spoons."},{t:600,a:"Start tasting. Slurp from the spoon and rinse it between coffees."},{t:1200,a:"Taste again as it cools. Acidity and sweetness show more now."}],
+ notes:"It takes brewing skill out of the comparison, so the differences you taste come from the coffee.", src:"", verified:true}
 ];
 const byId = Object.fromEntries(R.map(r=>[r.id,r]));
-const DEV = {ap:"AeroPress", sw:"Switch"};
+const DEV = {ap:"AeroPress", sw:"Switch", cup:"Cupping"};
+const KIND = {expert:"Expert", champ:"Champion", train:"Training"};
 
 /* ---------- helpers ---------- */
 const $ = s=>document.querySelector(s);
@@ -560,8 +635,9 @@ function recipeLabel(r){return `${r.author}, ${r.name}`}
 
 /* ---------- tabs ---------- */
 function showTab(name){
+    if(name==="grind")name="guide";if(!["brew","recipes","log","beans","guide"].includes(name))name="brew";
   document.querySelectorAll(".seg button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===name)));
-  ["brew","recipes","log","beans","grind"].forEach(n=>$("#p-"+n).hidden=n!==name);
+  ["brew","recipes","log","beans","guide"].forEach(n=>$("#p-"+n).hidden=n!==name);
   lsSet("tab",name);
 }
 document.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",()=>showTab(b.dataset.tab)));
@@ -612,12 +688,12 @@ function renderRecipes(){
   $("#recipeList").innerHTML = list.map(r=>`
     <article class="recipe ${r.dev}">
       <div class="head">
-        <div class="row" style="gap:6px"><span class="tag ${r.dev}">${DEV[r.dev]}</span><span class="tag plain">${r.kind==="champ"?"Champion":"Expert"}</span>${r.verified?"":`<span class="tag warn">Unverified</span>`}</div>
+        <div class="row" style="gap:6px"><span class="tag ${r.dev}">${DEV[r.dev]}</span><span class="tag plain">${KIND[r.kind]}</span>${r.verified?"":`<span class="tag warn">Unverified</span>`}</div>
         <h3>${esc(r.name)}</h3>
         <div class="by">${esc(r.author)}. ${esc(r.cred)}</div>
         ${stats([["Coffee",r.dose+" g"],["Water",r.water+" g"],["Ratio",ratio(r.dose,r.water)],["C5 est.",r.c5]])}
         ${bestFor(r.id)}
-        <div class="row"><button class="btn small primary" data-brew="${r.id}">Brew this</button><button class="btn small" data-log="${r.id}">Log this</button></div>
+        <div class="row"><button class="btn small primary" data-brew="${r.id}">Brew this</button>${r.dev==="cup"?"":`<button class="btn small" data-log="${r.id}">Log this</button>`}</div>
       </div>
       <details>
         <summary>Method and source</summary>
@@ -630,7 +706,7 @@ function renderRecipes(){
           </dl>
           ${stepsHtml(r)}
           <p class="muted" style="margin:0;font-size:13px">${esc(r.notes)}</p>
-          <a href="${esc(r.src)}" target="_blank" rel="noopener" style="font-size:13px">Source</a>
+          ${r.src?`<a href="${esc(r.src)}" target="_blank" rel="noopener" style="font-size:13px">Source</a>`:""}
         </div>
       </details>
     </article>`).join("");
@@ -642,7 +718,7 @@ $("#recipeList").addEventListener("click",e=>{
 
 /* ---------- brew tab ---------- */
 const pick = $("#brewPick");
-pick.innerHTML = ["ap","sw"].map(d=>`<optgroup label="${DEV[d]}">${R.filter(r=>r.dev===d).map(r=>`<option value="${r.id}">${esc(recipeLabel(r))}</option>`).join("")}</optgroup>`).join("");
+pick.innerHTML = ["ap","sw","cup"].map(d=>`<optgroup label="${DEV[d]}">${R.filter(r=>r.dev===d).map(r=>`<option value="${r.id}">${esc(recipeLabel(r))}</option>`).join("")}</optgroup>`).join("");
 let cur = byId[lsGet("brewRecipe","chronicler-5050")] || R[0];
 let running=false, startAt=0, elapsed=0, raf=null, lastIdx=-1, audio=null, wake=null;
 
@@ -694,6 +770,7 @@ function resetTimer(){running=false;cancelAnimationFrame(raf);elapsed=0;lastIdx=
 $("#startBtn").addEventListener("click",startStop);
 $("#resetBtn").addEventListener("click",()=>{resetTimer();tick(true)});
 $("#logThisBtn").addEventListener("click",()=>{
+  if(cur.dev==="cup"){openGuide("taste","ex-cupping");return}
   const t = running ? (performance.now()-startAt)/1000 : elapsed;
   prefillFromRecipe(cur.id); if(t>0)$("#fTime").value=mmss(t);
   showTab("log");window.scrollTo(0,0);
@@ -722,7 +799,7 @@ function resetForm(clearCoffee=true){
   $("#fDate").value=today();fillRecipeOptions($("#fDevice").value);
   const act=activeBeans();
   fillBeanPick(clearCoffee||!keepBean||keepBean==="__new" ? (act[0]?act[0].id:"__new") : keepBean);
-  $("#fNotes").placeholder="Jasmine, peach, clean finish";setFlav([]);
+  $("#fNotes").placeholder="Acidity, sweetness, body, finish. Then what it reminds you of.";setFlav([]);setMouth([]);setOpt("fStrength","");setOpt("fExtraction","");autoNext="";
   ["Sweet","Acid","Body","Score"].forEach(k=>$("#v"+k).textContent=$("#f"+k).value);
   updateHint();updateRatio();
 }
@@ -731,15 +808,6 @@ fRecipe.addEventListener("change",()=>{if(fRecipe.value)prefillFromRecipe(fRecip
 ["Sweet","Acid","Body","Score"].forEach(k=>$("#f"+k).addEventListener("input",()=>$("#v"+k).textContent=$("#f"+k).value));
 function updateRatio(){const d=+$("#fDose").value,w=+$("#fWater").value;$("#ratioOut").textContent=d&&w?`Ratio ${ratio(d,w)}`:""}
 $("#fDose").addEventListener("input",updateRatio);$("#fWater").addEventListener("input",updateRatio);
-const HINTS={
-  sour:"Next time: 1 to 2 clicks finer, or 2 to 3 °C hotter. Change one of the two.",
-  bitter:"Next time: 1 to 2 clicks coarser, or 2 to 3 °C cooler. Press gently and stop at the hiss.",
-  weak:"Next time: raise the dose by 1 g, or use less bypass water.",
-  strong:"Next time: add bypass water to the cup, or lower the dose by 1 g.",
-  balanced:"Keep this. Note the clicks so you can repeat it."
-};
-function updateHint(){const v=$("#fTaste").value;$("#tasteHint").hidden=!v;$("#tasteHint").textContent=HINTS[v]||""}
-$("#fTaste").addEventListener("change",()=>{updateHint();if(!$("#fNext").value&&HINTS[$("#fTaste").value]&&$("#fTaste").value!=="balanced")$("#fNext").value=HINTS[$("#fTaste").value].replace("Next time: ","")});
 $("#clearForm").addEventListener("click",()=>resetForm(true));
 
 $("#logForm").addEventListener("submit",async e=>{
@@ -753,8 +821,8 @@ $("#logForm").addEventListener("submit",async e=>{
       date:$("#fDate").value, device:$("#fDevice").value, recipe:fRecipe.value,
       beanId:bn?bn.id:"", bean:bn?bn.name:"", roaster:bn?bn.roaster||"":"", roast:bn?bn.roast||"":"", process:bn?bn.process||"":"", roastDate:bn?bn.roastDate||"":"",
       clicks:num("#fClicks"), dose:num("#fDose"), water:num("#fWater"), temp:num("#fTemp"), time:parseTime($("#fTime").value),
-      taste:$("#fTaste").value, sweet:+$("#fSweet").value, acid:+$("#fAcid").value, body:+$("#fBody").value, score:+$("#fScore").value,
-      flavours:getFlav(), notes:$("#fNotes").value.trim(), next:$("#fNext").value.trim(),
+      strength:getOpt("fStrength"), extraction:getOpt("fExtraction"), sweet:+$("#fSweet").value, acid:+$("#fAcid").value, body:+$("#fBody").value, score:+$("#fScore").value,
+      flavours:getFlav(), mouth:getMouth(), notes:$("#fNotes").value.trim(), next:$("#fNext").value.trim(),
       created: editingId ? (brews.find(b=>b.id===editingId)?.created||Date.now()) : Date.now()
     };
     const wasEdit=!!editingId;
@@ -765,16 +833,66 @@ $("#logForm").addEventListener("submit",async e=>{
 });
 
 /* ---------- flavours ---------- */
-const FLAV=["Floral","Citrus","Berry","Stone fruit","Tropical","Apple, pear","Grape, wine","Tea like","Caramel","Chocolate","Nutty","Spice","Juicy","Clean","Muddy","Astringent"];
-$("#fFlav").innerHTML=FLAV.map(f=>`<button type="button" class="fchip" aria-pressed="false" data-f="${esc(f)}">${esc(f)}</button>`).join("");
-$("#fFlav").addEventListener("click",e=>{const b=e.target.closest(".fchip");if(b)b.setAttribute("aria-pressed",String(b.getAttribute("aria-pressed")!=="true"))});
-function getFlav(){return [...document.querySelectorAll("#fFlav .fchip[aria-pressed=true]")].map(b=>b.dataset.f)}
-function setFlav(list){const set=new Set(list||[]);document.querySelectorAll("#fFlav .fchip").forEach(b=>b.setAttribute("aria-pressed",String(set.has(b.dataset.f))))}
+const WHEEL=[
+ {c:"Floral",col:"#C4638F",g:[{n:"Floral",x:["Jasmine","Rose","Chamomile","Orange blossom","Black tea"]}]},
+ {c:"Fruity",col:"#C8483B",g:[{n:"Berry",x:["Strawberry","Raspberry","Blueberry","Blackberry"]},{n:"Citrus",x:["Lemon","Lime","Orange","Grapefruit"]},{n:"Stone fruit",x:["Peach","Apricot","Cherry","Plum"]},{n:"Tropical",x:["Pineapple","Mango","Guava","Passion fruit","Lychee"]},{n:"Orchard",x:["Apple","Pear","Grape","Pomegranate"]},{n:"Dried fruit",x:["Raisin","Prune","Date"]}]},
+ {c:"Fermented",col:"#A58A1C",g:[{n:"Fermented",x:["Winey","Boozy","Yogurt","Vinegar"]}]},
+ {c:"Sweet",col:"#C7801F",g:[{n:"Sweet",x:["Honey","Caramel","Brown sugar","Maple","Vanilla","Molasses"]}]},
+ {c:"Nutty and cocoa",col:"#8A5A34",g:[{n:"Nutty",x:["Almond","Hazelnut","Peanut"]},{n:"Cocoa",x:["Milk chocolate","Dark chocolate","Cocoa"]}]},
+ {c:"Spice",col:"#B0602A",g:[{n:"Spice",x:["Cinnamon","Clove","Cardamom","Nutmeg","Black pepper"]}]},
+ {c:"Roasted",col:"#6E6258",g:[{n:"Roasted",x:["Toast","Malt","Tobacco","Smoky","Burnt"]}]},
+ {c:"Green",col:"#5E8C4A",g:[{n:"Green",x:["Grassy","Herbal","Peapod","Hay","Underripe"]}]},
+ {c:"Off notes",col:"#7C8187",g:[{n:"Off notes",x:["Papery","Earthy","Musty","Rubbery","Medicinal"]}]}
+];
+const MOUTH=["Tea-like","Silky","Juicy","Syrupy","Heavy","Muddy","Clean finish","Long finish","Short finish"];
+const CAT_OF={};WHEEL.forEach(w=>{CAT_OF[w.c]=w;w.g.forEach(g=>{CAT_OF[g.n]=w;g.x.forEach(x=>CAT_OF[x]=w)})});
+function colOf(f){return CAT_OF[f]?CAT_OF[f].col:"var(--muted)"}
+function dot(f){return `<i class="dotc" style="background:${colOf(f)}"></i>`}
+let flavSel=new Set(),openCat=null;
+function renderWheel(){
+  $("#wheelCats").innerHTML=WHEEL.map(w=>{const n=[...flavSel].filter(f=>CAT_OF[f]===w).length;
+    return `<button type="button" class="fchip wcat" data-cat="${esc(w.c)}" aria-expanded="${openCat===w.c}"><i class="dotc" style="background:${w.col}"></i>${esc(w.c)}${n?`<b>${n}</b>`:""}</button>`}).join("");
+  const w=WHEEL.find(x=>x.c===openCat);$("#wheelPanel").hidden=!w;
+  if(w){
+    const chip=(f,cls,label)=>`<button type="button" class="fchip ${cls||""}" data-f="${esc(f)}" aria-pressed="${flavSel.has(f)}">${esc(label||f)}</button>`;
+    let h=`<div class="wgroup">${chip(w.c,"gchip","Just "+w.c.toLowerCase())}${w.g.length===1?w.g[0].x.map(x=>chip(x)).join(""):""}</div>`;
+    if(w.g.length>1)h+=w.g.map(g=>`<div class="wgroup">${chip(g.n,"gchip")}${g.x.map(x=>chip(x)).join("")}</div>`).join("");
+    $("#wheelPanel").innerHTML=h;
+  }
+  $("#flavPicked").innerHTML=[...flavSel].map(f=>`<button type="button" class="fchip" data-rm="${esc(f)}" aria-label="Remove ${esc(f)}">${dot(f)}${esc(f)} &#215;</button>`).join("");
+}
+$("#wheelCats").addEventListener("click",e=>{const b=e.target.closest("[data-cat]");if(!b)return;openCat=openCat===b.dataset.cat?null:b.dataset.cat;renderWheel()});
+$("#wheelPanel").addEventListener("click",e=>{const b=e.target.closest("[data-f]");if(!b)return;const f=b.dataset.f;flavSel.has(f)?flavSel.delete(f):flavSel.add(f);renderWheel()});
+$("#flavPicked").addEventListener("click",e=>{const b=e.target.closest("[data-rm]");if(!b)return;flavSel.delete(b.dataset.rm);renderWheel()});
+function getFlav(){return [...flavSel]}
+function setFlav(list){flavSel=new Set(list||[]);openCat=null;renderWheel()}
+$("#fMouth").innerHTML=MOUTH.map(f=>`<button type="button" class="fchip" aria-pressed="false" data-f="${esc(f)}">${esc(f)}</button>`).join("");
+$("#fMouth").addEventListener("click",e=>{const b=e.target.closest(".fchip");if(b)b.setAttribute("aria-pressed",String(b.getAttribute("aria-pressed")!=="true"))});
+function getMouth(){return [...document.querySelectorAll("#fMouth .fchip[aria-pressed=true]")].map(b=>b.dataset.f)}
+function setMouth(list){const set=new Set(list||[]);document.querySelectorAll("#fMouth .fchip").forEach(b=>b.setAttribute("aria-pressed",String(set.has(b.dataset.f))))}
+renderWheel();
+
+/* strength and extraction */
+function getOpt(id){const b=document.querySelector(`#${id} .opt[aria-pressed="true"]`);return b?b.dataset.v:""}
+function setOpt(id,v){document.querySelectorAll(`#${id} .opt`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===v)))}
+const XH={sour:"Grind 1 to 2 clicks finer, or brew 2 to 3 °C hotter. Change one of the two.",bitter:"Grind 1 to 2 clicks coarser, or brew 2 to 3 °C cooler.",dry:"Grind 1 to 2 clicks coarser and agitate less. Drying usually comes from fines or pressing through the hiss.",balanced:""};
+const SH={weak:"Use 1 g more coffee, or less water or bypass.",strong:"Add 20 to 30 g water to the cup, or use 1 g less coffee.",right:""};
+function hintText(){return [XH[getOpt("fExtraction")],SH[getOpt("fStrength")]].filter(Boolean).join(" ")}
+let autoNext="";
+function updateHint(){
+  const x=getOpt("fExtraction"),st=getOpt("fStrength"),h=$("#tasteHint"),t=hintText();
+  if(!x&&!st){h.hidden=true;return}
+  h.hidden=false;h.textContent=t?"Next time: "+t:(x==="balanced"&&st==="right"?"Dialled in. Keep these clicks and this ratio.":x==="balanced"?"Extraction is right. Keep the grind.":"Strength is right. Keep the ratio.");
+}
+function onTaste(){updateHint();const t=hintText(),n=$("#fNext");if(!n.value||n.value===autoNext){n.value=t;autoNext=t}}
+["fStrength","fExtraction"].forEach(id=>$("#"+id).addEventListener("click",e=>{const b=e.target.closest(".opt");if(!b)return;setOpt(id,b.getAttribute("aria-pressed")==="true"?"":b.dataset.v);onTaste()}));
+function tasteOf(b){const t=b.taste||"";return {strength:b.strength||(t==="weak"||t==="strong"?t:""),extraction:b.extraction||(["sour","bitter","balanced"].includes(t)?t:"")}}
+const XL={sour:"Sour",balanced:"Balanced",bitter:"Bitter",dry:"Drying"},SL={weak:"Weak",right:"Right strength",strong:"Strong"};
+function tasteTags(b){const t=tasteOf(b);return [t.extraction&&XL[t.extraction],t.strength&&t.strength!=="right"&&SL[t.strength]].filter(Boolean)}
 
 /* ---------- history ---------- */
 let hDev="all";
 chipGroup($("#histFilter"),v=>{hDev=v;renderHistory()});
-const TASTE={sour:"Sour",balanced:"Balanced",bitter:"Bitter",weak:"Weak",strong:"Strong"};
 function daysOff(b){if(!b.roastDate||!b.date)return null;return Math.round((new Date(b.date)-new Date(b.roastDate))/864e5)}
 function entryHtml(b,example){
   const r=byId[b.recipe];const d=daysOff(b);
@@ -782,7 +900,7 @@ function entryHtml(b,example){
   return `<article class="entry${example?" example":""}">
     <div class="row between" style="align-items:flex-start">
       <div style="min-width:0;flex:1">
-        <div class="row" style="gap:6px"><span class="tag ${b.device}">${DEV[b.device]}</span>${b.taste?`<span class="tag plain">${TASTE[b.taste]}</span>`:""}${example?`<span class="tag plain">Example</span>`:""}</div>
+        <div class="row" style="gap:6px"><span class="tag ${b.device}">${DEV[b.device]}</span>${tasteTags(b).map(x=>`<span class="tag plain">${x}</span>`).join("")}${example?`<span class="tag plain">Example</span>`:""}</div>
         <h3 style="margin-top:6px">${esc(b.bean||"Unnamed coffee")}${b.roaster?` <span class="muted" style="font-weight:400;font-family:var(--sans);font-size:14px">${esc(b.roaster)}</span>`:""}</h3>
         <div class="meta">${esc(b.date)}${r?`. ${esc(recipeLabel(r))}`:". Own recipe"}${b.roast?`. ${esc(b.roast)}`:""}${b.process?`, ${esc(b.process.toLowerCase())}`:""}${d!=null?`. ${d} days off roast`:""}</div>
       </div>
@@ -790,7 +908,7 @@ function entryHtml(b,example){
     </div>
     <div class="line">${esc(bits)}</div>
     <div class="meta">Sweetness ${b.sweet}, acidity ${b.acid}, body ${b.body}</div>
-    ${b.flavours&&b.flavours.length?`<div class="row" style="gap:4px">${b.flavours.map(f=>`<span class="tag plain">${esc(f)}</span>`).join("")}</div>`:""}
+    ${(b.flavours&&b.flavours.length)||(b.mouth&&b.mouth.length)?`<div class="row" style="gap:4px">${(b.flavours||[]).map(f=>`<span class="tag plain">${dot(f)}${esc(f)}</span>`).join("")}${(b.mouth||[]).map(f=>`<span class="tag plain">${esc(f)}</span>`).join("")}</div>`:""}
     ${b.notes?`<div>${esc(b.notes)}</div>`:""}
     ${b.next?`<div class="mine">Next time: ${esc(b.next)}</div>`:""}
     ${example?"":`<div class="row"><button class="btn small" data-again="${b.id}">Brew again</button><button class="btn small" data-edit="${b.id}">Edit</button><button class="btn small danger" data-del="${b.id}">Delete</button></div>`}
@@ -818,7 +936,7 @@ function loadBrew(b,edit){
   set("#fClicks",b.clicks);set("#fDose",b.dose);set("#fWater",b.water);set("#fTemp",b.temp);set("#fTime",b.time!=null?mmss(b.time):"");
   if(edit){
     editingId=b.id;$("#formTitle").textContent="Edit brew";$("#saveBtn").textContent="Update brew";
-    set("#fDate",b.date);set("#fTaste",b.taste);set("#fNotes",b.notes);set("#fNext",b.next);setFlav(b.flavours);
+    set("#fDate",b.date);{const t=tasteOf(b);setOpt("fStrength",t.strength);setOpt("fExtraction",t.extraction)}set("#fNotes",b.notes);set("#fNext",b.next);autoNext="";setFlav(b.flavours);setMouth(b.mouth);
     ["sweet","acid","body","score"].forEach(k=>{const K={sweet:"Sweet",acid:"Acid",body:"Body",score:"Score"}[k];$("#f"+K).value=b[k];$("#v"+K).textContent=b[k]});
     updateHint();
   }else if(b.next){$("#fNotes").placeholder="Last time: "+b.next}
@@ -944,13 +1062,13 @@ function beanCard(b){
 function topFlav(b){
   const c={};brewsFor(b).forEach(x=>(x.flavours||[]).forEach(f=>c[f]=(c[f]||0)+1));
   const top=Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,4);
-  return top.length?`<div class="row" style="gap:4px"><span class="muted" style="font-size:12px">You taste</span>${top.map(([f])=>`<span class="tag plain">${esc(f)}</span>`).join("")}</div>`:"";
+  return top.length?`<div class="row" style="gap:4px"><span class="muted" style="font-size:12px">You taste</span>${top.map(([f])=>`<span class="tag plain">${dot(f)}${esc(f)}</span>`).join("")}</div>`:"";
 }
 function dialTable(b){
   const l=brewsFor(b).slice().sort((x,y)=>(x.date||"").localeCompare(y.date||"")||(x.created||0)-(y.created||0));
   if(l.length<2)return "";
   const bestScore=Math.max(...l.map(x=>x.score||0));
-  const rows=l.slice(-8).map(x=>{const r=byId[x.recipe];return `<tr${(x.score||0)===bestScore?' style="font-weight:600"':""}><td class="num">${esc((x.date||"").slice(5))}</td><td>${esc(r?r.author.split(" ").slice(-1)[0]:"Own")}</td><td class="num">${x.clicks??"–"}</td><td class="num">${x.temp??"–"}</td><td>${x.taste?TASTE[x.taste]:"–"}</td><td class="num">${x.score}</td></tr>`}).join("");
+  const rows=l.slice(-8).map(x=>{const r=byId[x.recipe];return `<tr${(x.score||0)===bestScore?' style="font-weight:600"':""}><td class="num">${esc((x.date||"").slice(5))}</td><td>${esc(r?r.author.split(" ").slice(-1)[0]:"Own")}</td><td class="num">${x.clicks??"–"}</td><td class="num">${x.temp??"–"}</td><td>${tasteTags(x).join(", ")||"–"}</td><td class="num">${x.score}</td></tr>`}).join("");
   return `<details><summary class="muted" style="font-size:13px;cursor:pointer;font-weight:600">Grind history (${l.length} brews)</summary><div class="scroll"><table class="dial"><thead><tr><th>Date</th><th>Recipe</th><th>Clicks</th><th>°C</th><th>Cup</th><th>Score</th></tr></thead><tbody>${rows}</tbody></table></div></details>`;
 }
 function renderBeans(){
@@ -993,6 +1111,52 @@ $("#p-beans").addEventListener("click",async e=>{
     try{await saveBean(materialize(b,{finished:true}));toast("Moved to finished bags")}catch(err){toast("Could not update. Try again.")}}
 });
 
+/* ---------- guide and exercises ---------- */
+const EX=[
+ {id:"refs",name:"Kitchen references",time:"About 30 minutes",need:"Six identical cups, a lemon, a green apple, sugar, tonic water or cocoa, salt, black tea",
+  steps:["Mix each into 200 ml of water, weak enough to be subtle: a few drops of lemon, a squeeze of green apple juice, a small pinch of sugar, a splash of tonic or a pinch of cocoa, a tiny pinch of salt, and black tea steeped for 10 minutes.","Mark the bottoms of the cups and have someone shuffle them.","Taste each one, name it, then check.","Repeat until you get all six right."],
+  notice:"Where each one sits. Sour is at the sides of the tongue, bitter at the back. The stewed tea is a drying feeling on the gums, not a taste. That feeling is what the log calls Drying."},
+ {id:"triangle",name:"Extraction triangle",time:"About 20 minutes",need:"AeroPress, 45 g of one coffee, three cups",brew:["train-under","train-mid","train-over"],
+  steps:["Brew the three training recipes back to back. Only the grind and the steep change.","Label the cups 1, 2 and 3.","Let them cool a little. Taste 2 first, then 1, then 3, then go back and forth."],
+  notice:"Cup 1 should be sour, thin and slightly salty. Cup 3 hollow, bitter and drying. Once you know these two ends, every brew sits somewhere between them."},
+ {id:"strength",name:"Strength split",time:"5 minutes",need:"One good brew, two cups",
+  steps:["Split a finished brew into two cups.","Add 30 g of hot water to one of them.","Taste both, back and forth."],
+  notice:"The watered cup is weaker, but its sourness or bitterness does not change. Strength and extraction are separate dials."},
+ {id:"side",name:"Side by side",time:"About 15 minutes",need:"Two different coffees, same brewer",
+  steps:["Brew both with the same recipe, dose and clicks, one after the other.","Taste them alternately and rinse with water between sips.","Write one difference each for acidity, sweetness, body and flavour."],
+  notice:"Good pairs: a washed and a natural coffee from the same country, or a Kenyan against a Brazilian. Comparing teaches more than any single cup."},
+ {id:"cupping",name:"Home cupping",time:"About 25 minutes",need:"A cup and 8.25 g of coffee per sample, two spoons, rinse water",brew:["train-cupping"],
+  steps:["Use 8.25 g of coffee to 150 ml of water at about 93 °C, the SCA cupping ratio.","Follow the Home cupping timer: pour, break the crust at 4 minutes, skim, taste from 10 minutes.","Taste each coffee again as it cools."],
+  notice:"No brewing skill involved, so differences come from the coffee itself. This is how roasters and competition judges taste."}
+];
+function renderEx(){
+  const ses=lsGet("training",[]);
+  $("#exList").innerHTML=EX.map(x=>{
+    const past=ses.filter(z=>z.ex===x.id).slice(-3).reverse();
+    return `<article class="box panel" id="ex-${x.id}">
+      <div><h3>${esc(x.name)}</h3><div class="muted small">${esc(x.time)}. You need: ${esc(x.need)}.</div></div>
+      <ol class="plain">${x.steps.map(t=>`<li>${esc(t)}</li>`).join("")}</ol>
+      <div class="hint"><strong>What to notice:</strong> ${esc(x.notice)}</div>
+      ${x.brew?`<div class="row">${x.brew.map(id=>`<button type="button" class="btn small" data-brew="${id}">${esc(byId[id].name.replace("Extraction triangle ",""))} in timer</button>`).join("")}</div>`:""}
+      <div class="f"><label for="exn-${x.id}">What you noticed</label><textarea id="exn-${x.id}" placeholder="In your own words"></textarea></div>
+      <div class="row between"><span class="muted small">${past.length?`Done ${ses.filter(z=>z.ex===x.id).length} time${ses.filter(z=>z.ex===x.id).length>1?"s":""}`:"Not tried yet"}</span><button type="button" class="btn small primary" data-save-ex="${x.id}">Save session</button></div>
+      ${past.map(z=>`<div class="session"><span class="mono muted">${esc(z.date)}</span> ${esc(z.notes)}</div>`).join("")}
+    </article>`}).join("");
+}
+$("#exList").addEventListener("click",e=>{
+  const b=e.target.closest("[data-brew]");if(b){pickBrew(b.dataset.brew);showTab("brew");window.scrollTo(0,0);return}
+  const s2=e.target.closest("[data-save-ex]");if(!s2)return;
+  const id=s2.dataset.saveEx,ta=$("#exn-"+id),notes=ta.value.trim();
+  if(!notes){toast("Write what you noticed first.");ta.focus();return}
+  const ses=lsGet("training",[]);ses.push({id:newId(),ex:id,date:today(),notes});lsSet("training",ses);renderEx();toast("Session saved");
+});
+let guideSub="taste";
+function setGuide(v){guideSub=v;$("#g-taste").hidden=v!=="taste";$("#g-grind").hidden=v!=="grind";document.querySelectorAll("#guideNav .chip").forEach(c=>c.setAttribute("aria-pressed",String(c.dataset.v===v)))}
+chipGroup($("#guideNav"),setGuide);
+function openGuide(sub,anchor){showTab("guide");setGuide(sub);setTimeout(()=>{const el=anchor&&document.getElementById(anchor);el?el.scrollIntoView({block:"start"}):window.scrollTo(0,0)},0)}
+document.addEventListener("click",e=>{const g=e.target.closest("[data-guide]");if(g)openGuide(g.dataset.guide)});
+renderEx();
+
 /* ---------- export and backup ---------- */
 async function offerFile(name,text,type){
   const blob=new Blob([text],{type});
@@ -1009,10 +1173,10 @@ function backupNote(){
   $("#backupNote").textContent=!brews.length?"Nothing logged yet.":t?`Last backup ${plural(Math.floor((Date.now()-t)/864e5),"day")} ago. ${plural(brews.length,"brew")} and ${plural(beans.length,"coffee")} on this phone.`:`Not backed up yet. ${plural(brews.length,"brew")} saved only on this phone.`;
 }
 $("#exportBtn").addEventListener("click",async()=>{
-  const cols=["date","device","recipe","coffee","roaster","origin","variety","roast","process","roastDate","daysOffRoast","clicks","dose","water","ratio","temp","time","taste","sweet","acid","body","score","flavours","notes","next"];
+  const cols=["date","device","recipe","coffee","roaster","origin","variety","roast","process","roastDate","daysOffRoast","clicks","dose","water","ratio","temp","time","extraction","strength","sweet","acid","body","score","flavours","notes","next"];
   const rows=brews.slice().sort((a,b)=>(a.date||"").localeCompare(b.date||"")).map(b=>{
     const bn=beanForBrew(b)||{},r=byId[b.recipe];
-    const v={date:b.date,device:DEV[b.device],recipe:r?recipeLabel(r):"Own recipe",coffee:b.bean,roaster:b.roaster,origin:bn.origin,variety:bn.variety,roast:b.roast,process:b.process,roastDate:b.roastDate,daysOffRoast:daysOff(b),clicks:b.clicks,dose:b.dose,water:b.water,ratio:b.dose&&b.water?(b.water/b.dose).toFixed(1):"",temp:b.temp,time:b.time!=null?mmss(b.time):"",taste:b.taste,sweet:b.sweet,acid:b.acid,body:b.body,score:b.score,flavours:b.flavours,notes:b.notes,next:b.next};
+    const v={date:b.date,device:DEV[b.device],recipe:r?recipeLabel(r):"Own recipe",coffee:b.bean,roaster:b.roaster,origin:bn.origin,variety:bn.variety,roast:b.roast,process:b.process,roastDate:b.roastDate,daysOffRoast:daysOff(b),clicks:b.clicks,dose:b.dose,water:b.water,ratio:b.dose&&b.water?(b.water/b.dose).toFixed(1):"",temp:b.temp,time:b.time!=null?mmss(b.time):"",extraction:XL[tasteOf(b).extraction]||"",strength:SL[tasteOf(b).strength]||"",sweet:b.sweet,acid:b.acid,body:b.body,score:b.score,flavours:[...(b.flavours||[]),...(b.mouth||[])],notes:b.notes,next:b.next};
     return cols.map(c=>csvCell(v[c])).join(",");
   });
   await offerFile(`brew-log-${today()}.csv`,cols.join(",")+"\n"+rows.join("\n"),"text/csv");
