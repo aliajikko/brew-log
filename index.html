@@ -1382,21 +1382,46 @@ function daysSince(date){if(!date)return null;return Math.round((new Date(today(
 function allBeans(){
   const saved=beans.slice();
   const keys=new Set(saved.map(b=>bkey(b.name,b.roaster)));
-  const ids=new Set(saved.map(b=>b.id));
   const virt={};
   brews.slice().sort((a,b)=>(a.created||0)-(b.created||0)).forEach(br=>{
-    if(br.beanId&&ids.has(br.beanId))return;
     if(!br.bean)return;
     const k=bkey(br.bean,br.roaster);if(keys.has(k))return;
-    virt[k]={id:"v-"+encodeURIComponent(k),virtual:true,name:br.bean,roaster:br.roaster||"",roast:br.roast||"",process:br.process||"",roastDate:br.roastDate||"",bagWeight:null,created:br.created||0};
+    virt[k]={id:"v-"+encodeURIComponent(k),virtual:true,name:br.bean,roaster:br.roaster||"",roast:br.roast||"",process:br.process||"",roastDate:br.roastDate||"",bagWeight:null,created:(virt[k]&&virt[k].created)||br.created||0};
   });
   return saved.concat(Object.values(virt));
 }
 function brewsFor(b){
-  const ids=new Set(beans.map(x=>x.id));const k=bkey(b.name,b.roaster);
-  return brews.filter(br=>br.beanId===b.id||((!br.beanId||!ids.has(br.beanId))&&br.bean&&bkey(br.bean,br.roaster)===k));
+  const k=bkey(b.name,b.roaster);
+  const same=beans.filter(x=>bkey(x.name,x.roaster)===k);
+  return brews.filter(br=>{
+    if(!br.bean)return br.beanId===b.id;
+    if(bkey(br.bean,br.roaster)!==k)return false;
+    if(same.length<2)return true;
+    return br.beanId===b.id||(!same.some(x=>x.id===br.beanId)&&same[0].id===b.id);
+  });
 }
-function beanForBrew(br){const all=allBeans();return all.find(x=>br.beanId&&x.id===br.beanId)||all.find(x=>br.bean&&bkey(x.name,x.roaster)===bkey(br.bean,br.roaster))||null}
+function beanForBrew(br){const all=allBeans();return (br.bean&&all.find(x=>bkey(x.name,x.roaster)===bkey(br.bean,br.roaster)&&(!br.beanId||x.id===br.beanId)))||(br.bean&&all.find(x=>bkey(x.name,x.roaster)===bkey(br.bean,br.roaster)))||all.find(x=>x.id===br.beanId)||null}
+function migrateBeanIds(){
+  if(db||lsGet("mig-beans",0)>=1)return 0;
+  let made=0,moved=0;const fresh={};
+  brews.forEach(br=>{
+    if(!br.bean)return;
+    const k=bkey(br.bean,br.roaster);
+    const match=beans.filter(b=>bkey(b.name,b.roaster)===k);
+    let b=match.find(x=>br.roastDate&&x.roastDate===br.roastDate)||match[0]||fresh[k];
+    if(!b){
+      const mine=brews.filter(x=>x.bean&&bkey(x.bean,x.roaster)===k).sort((p,q)=>(q.created||0)-(p.created||0));
+      const n=mine[0],gap=n.date?Math.round((new Date(today())-new Date(n.date))/864e5):99;
+      b=fresh[k]={id:newId(),name:n.bean,roaster:n.roaster||"",origin:"",variety:"",roast:n.roast||"",process:n.process||"",
+        roastDate:n.roastDate||"",bagWeight:null,notes:"",finished:gap>14,created:mine[mine.length-1].created||Date.now()};
+      beans.push(b);made++;
+    }
+    if(br.beanId!==b.id){br.beanId=b.id;moved++}
+  });
+  lsSet("mig-beans",1);
+  if(made||moved){lsSet("brews-local",brews);lsSet("beans-local",beans)}
+  return made;
+}
 function beanStats(b){
   const l=brewsFor(b),count=l.length;
   const avg=count?(l.reduce((s,x)=>s+(x.score||0),0)/count).toFixed(1):null;
@@ -1655,7 +1680,9 @@ $("#restoreFile").addEventListener("change",async e=>{
 });
 
 /* ---------- boot ---------- */
+const splitCount=migrateBeanIds();
 pick.value=cur.id;renderBrew();resetForm(true);renderAll();
+if(splitCount)setTimeout(()=>toast(`Separated ${splitCount} ${splitCount>1?"coffees":"coffee"} that shared one record`),900);
 showTab(lsGet("tab","brew"));
 if("serviceWorker" in navigator&&location.protocol==="https:"){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
 </script>
