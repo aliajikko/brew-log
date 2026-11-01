@@ -138,7 +138,8 @@ form.log{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .chead{font-family:var(--display);font-size:19px;line-height:1.25;margin:6px 0 4px;letter-spacing:-.01em}
 .cbody{font-size:14px;color:var(--muted);margin:0 0 10px;line-height:1.5}
 .ctar{display:flex;flex-wrap:wrap;gap:4px;margin:10px 0 2px}
-.ctar span{font-family:var(--mono);font-size:12px;background:var(--sunk);border-radius:5px;padding:3px 7px;white-space:nowrap}
+.ctar span{font-family:var(--mono);font-size:12px;background:var(--sunk);border-radius:5px;padding:3px 7px;white-space:nowrap;max-width:100%;overflow-wrap:anywhere}
+.ctar span.name{white-space:normal}
 .ctar span.chg{background:var(--press);color:var(--on-accent)}
 @media (max-width:460px){form.log{grid-template-columns:minmax(0,1fr)}}
 
@@ -269,6 +270,7 @@ ol.plain{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
   <!-- LOG -->
   <section class="panel" id="p-log" hidden>
     <div class="stats" id="logStats"></div>
+    <div class="muted small" id="statNote" style="margin-top:-4px"></div>
     <div class="box panel coach" id="coachCard" hidden></div>
     <div class="box panel">
       <div class="row between"><h2 id="formTitle">New brew</h2><button class="btn small" id="clearForm" type="button">Clear</button></div>
@@ -277,6 +279,7 @@ ol.plain{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
         <div class="f"><label for="fDevice">Brewer</label>
           <select id="fDevice"><option value="ap">AeroPress</option><option value="sw">Hario Switch</option></select></div>
         <div class="f wide"><label for="fRecipe">Recipe</label><select id="fRecipe"></select></div>
+        <div class="beaninfo wide" id="recipeInfo" hidden></div>
         <div class="f wide"><label for="fBeanPick">Coffee</label><select id="fBeanPick"></select></div>
         <div class="beaninfo wide" id="beanInfo"></div>
         <div class="f wide"><label for="fRoastDate">Roast date of this bag</label><input id="fRoastDate" type="date">
@@ -713,7 +716,7 @@ function bestFor(id){
 function renderRecipes(){
   const list = R.filter(r=>(fDev==="all"||r.dev===fDev)&&(fKind==="all"||r.kind===fKind));
   $("#recipeList").innerHTML = list.map(r=>`
-    <article class="recipe ${r.dev}">
+    <article class="recipe ${r.dev}" id="r-${r.id}">
       <div class="head">
         <div class="row" style="gap:6px"><span class="tag ${r.dev}">${DEV[r.dev]}</span><span class="tag plain">${KIND[r.kind]}</span>${r.verified?"":`<span class="tag warn">Unverified</span>`}</div>
         <h3>${esc(r.name)}</h3>
@@ -832,7 +835,24 @@ $("#logThisBtn").addEventListener("click",()=>{
 const fRecipe=$("#fRecipe");
 function fillRecipeOptions(dev){
   fRecipe.innerHTML = `<option value="">Own recipe</option>`+R.filter(r=>r.dev===dev).map(r=>`<option value="${r.id}">${esc(recipeLabel(r))}</option>`).join("");
+  showRecipeInfo();
 }
+function showRecipeInfo(){
+  const el=$("#recipeInfo");if(!el)return;
+  const r=byId[fRecipe.value];
+  el.hidden=!r;
+  el.innerHTML=r?[`<span><b>${esc(r.author)}</b>, ${esc(r.name)}</span>`,r.cred&&`<span>${esc(r.cred)}</span>`,
+    `<button type="button" class="linkbtn" data-openrecipe="${esc(r.id)}">Open the recipe</button>`].filter(Boolean).join(""):"";
+}
+$("#recipeInfo").addEventListener("click",e=>{
+  const b=e.target.closest("[data-openrecipe]");if(!b)return;
+  fDev="all";fKind="all";
+  [["#devFilter","all"],["#kindFilter","all"]].forEach(([sel,v])=>$(sel).querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed",String(c.dataset.v===v))));
+  renderRecipes();showTab("recipes");
+  const card=document.getElementById("r-"+b.dataset.openrecipe);
+  if(card){const d=card.querySelector("details");if(d)d.open=true;card.scrollIntoView({block:"start"});setTimeout(()=>window.scrollBy(0,-80),0)}
+  else window.scrollTo(0,0);
+});
 function today(){const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 let editingId=null;
 function firstNum(s){const m=String(s||"").match(/\d+(\.\d+)?/);return m?m[0]:""}
@@ -843,7 +863,7 @@ function prefillFromRecipe(id){
   $("#fDevice").value=r.dev;fillRecipeOptions(r.dev);fRecipe.value=r.id;
   $("#fDose").value=round1(d);$("#fWater").value=Math.round(r.water*k);$("#fTemp").value=firstNum(r.temp);$("#fClicks").value=firstNum(r.c5);
   const last=r.steps[r.steps.length-1];$("#fTime").value=mmss(last.t);
-  updateRatio();
+  updateRatio();showRecipeInfo();
 }
 function resetForm(clearCoffee=true){
   editingId=null;$("#formTitle").textContent="New brew";$("#saveBtn").textContent="Save brew";
@@ -857,7 +877,7 @@ function resetForm(clearCoffee=true){
   updateHint();updateRatio();renderCoach();
 }
 $("#fDevice").addEventListener("change",()=>fillRecipeOptions($("#fDevice").value));
-fRecipe.addEventListener("change",()=>{if(fRecipe.value)prefillFromRecipe(fRecipe.value)});
+fRecipe.addEventListener("change",()=>{showRecipeInfo();if(fRecipe.value)prefillFromRecipe(fRecipe.value)});
 $("#fScore").addEventListener("input",()=>$("#vScore").textContent=$("#fScore").value);
 function updateRatio(){const d=+$("#fDose").value,w=+$("#fWater").value;$("#ratioOut").textContent=d&&w?`Ratio ${ratio(d,w)}`:""}
 $("#fDose").addEventListener("input",updateRatio);$("#fWater").addEventListener("input",updateRatio);
@@ -1256,7 +1276,7 @@ function renderCoach(){
     <h2 class="chead">${esc(v.head)}</h2>
     <p class="cbody">${esc(v.body)}</p>
     ${v.hold?`<div class="mine">${esc(v.hold)}</div>`:""}
-    <div class="ctar">${rc&&t.recipe!==prevB.recipe?cell(recipeLabel(rc),true):""}${cell(t.clicks!=null?t.clicks+" clicks":"",t.clicks!==prevB.clicks)}${cell(t.dose!=null?t.dose+" g":"",t.dose!==prevB.dose)}${cell(t.water!=null?t.water+" g":"",t.water!==prevB.water)}${cell(t.temp!=null?t.temp+" °C":"",t.temp!==prevB.temp)}</div>
+    <div class="ctar">${rc&&t.recipe!==prevB.recipe?`<span class="name chg">${esc(recipeLabel(rc))}</span>`:""}${cell(t.clicks!=null?t.clicks+" clicks":"",t.clicks!==prevB.clicks)}${cell(t.dose!=null?t.dose+" g":"",t.dose!==prevB.dose)}${cell(t.water!=null?t.water+" g":"",t.water!==prevB.water)}${cell(t.temp!=null?t.temp+" °C":"",t.temp!==prevB.temp)}</div>
     ${v.done||!v.variable?"":`<div style="margin-top:12px"><div class="muted" style="font-size:13px;margin-bottom:5px">Your call before you taste it</div>
       <div class="opts" id="coachPred"><button type="button" class="opt" data-p="worse" aria-pressed="${p&&p.pred==="worse"}">Worse</button><button type="button" class="opt" data-p="same" aria-pressed="${p&&p.pred==="same"}">Same</button><button type="button" class="opt" data-p="better" aria-pressed="${p&&p.pred==="better"}">Better</button></div></div>`}
     <div class="row" style="margin-top:8px"><button class="btn primary small" type="button" data-cuse>Set up this brew</button>${(v.done||v.state==="dialled")&&!coachPush?`<button class="btn small" type="button" data-cpush>Push it anyway</button>`:""}${coachPush?`<button class="btn small" type="button" data-cstop>Back to the settled cup</button>`:""}</div>
@@ -1274,6 +1294,7 @@ $("#coachCard").addEventListener("click",e=>{
     const keep=$("#fBeanPick").value,rd=$("#fRoastDate").value;
     resetForm(false);
     if(t.recipe&&byId[t.recipe]){$("#fDevice").value=byId[t.recipe].dev;fillRecipeOptions(byId[t.recipe].dev);fRecipe.value=t.recipe}
+    showRecipeInfo();
     fillBeanPick(keep);if(rd)$("#fRoastDate").value=rd;
     const set=(i,x)=>{if(x!=null&&x!=="")$(i).value=x};
     set("#fClicks",t.clicks);set("#fDose",t.dose);set("#fWater",t.water);set("#fTemp",t.temp);
@@ -1342,9 +1363,15 @@ function renderHistory(){
   const list=all.filter(b=>hDev==="all"||b.device===hDev);
   const week=all.filter(b=>b.date&&(new Date(today())-new Date(b.date))/864e5<7).length;
   const avg=all.length?(all.reduce((s,b)=>s+(b.score||0),0)/all.length).toFixed(1):"–";
-  const byR={};all.forEach(b=>{if(!b.recipe)return;(byR[b.recipe]=byR[b.recipe]||[]).push(b.score||0)});
-  let top="–",topAvg=-1;Object.entries(byR).forEach(([k,v])=>{const a=v.reduce((s,x)=>s+x,0)/v.length;if(a>topAvg){topAvg=a;top=byId[k]?byId[k].author:"–"}});
-  $("#logStats").innerHTML=stats([["Brews",all.length],["This week",week],["Avg score",avg],["Top recipe",top]]).replace(/^<div class="stats">|<\/div>$/g,"");
+  const byR={};all.forEach(b=>{if(!b.recipe||!byId[b.recipe])return;(byR[b.recipe]=byR[b.recipe]||[]).push(b.score||0)});
+  const rank=Object.entries(byR).map(([k,v])=>({r:byId[k],n:v.length,a:v.reduce((s,x)=>s+x,0)/v.length}));
+  const used=rank.slice().sort((x,y)=>y.n-x.n||y.a-x.a)[0];
+  const bestAvg=rank.filter(x=>x.n>=2).sort((x,y)=>y.a-x.a||y.n-x.n)[0];
+  $("#logStats").innerHTML=stats([["Brews",all.length],["This week",week],["Avg score",avg],["Most used",used?used.r.author:"–"]]).replace(/^<div class="stats">|<\/div>$/g,"");
+  const note=$("#statNote");
+  if(note)note.innerHTML=!used?"":esc(`Most used is the recipe you have logged most often: ${recipeLabel(used.r)}, ${used.n} ${used.n>1?"brews":"brew"}.`)
+    +(bestAvg?" "+esc(`Best average over two or more brews: ${recipeLabel(bestAvg.r)}, ${bestAvg.a.toFixed(1)} from ${bestAvg.n}.`):" No recipe has two brews yet, so there is no average worth reading.")
+    +" Your own recipes are not counted.";
   if(!all.length){
     $("#history").innerHTML=`<p class="muted" style="margin:0">No brews yet. Here is what an entry looks like.</p>`+entryHtml({device:"sw",recipe:"chronicler-5050",bean:"Ethiopia Guji, washed",roaster:"Example roaster",roast:"Light",process:"Washed",date:today(),dose:20,water:320,temp:93,clicks:16,time:185,taste:"sour",sweet:3,acid:4,body:2,score:6,notes:"Bright lemon, a little thin at the finish.",next:"Two clicks finer"},true);
     return;
@@ -1353,7 +1380,7 @@ function renderHistory(){
 }
 function loadBrew(b,edit){
   resetForm(false);
-  $("#fDevice").value=b.device;fillRecipeOptions(b.device);fRecipe.value=b.recipe||"";
+  $("#fDevice").value=b.device;fillRecipeOptions(b.device);fRecipe.value=b.recipe||"";showRecipeInfo();
   const set=(id,v)=>$(id).value=v??"";
   const bb=beanForBrew(b);lastPickId=null;fillBeanPick(bb?bb.id:(activeBeans()[0]?activeBeans()[0].id:"__new"));
   if(b.roastDate){$("#fRoastDate").value=b.roastDate;lastPickId=$("#fBeanPick").value}
@@ -1401,6 +1428,22 @@ function brewsFor(b){
   });
 }
 function beanForBrew(br){const all=allBeans();return (br.bean&&all.find(x=>bkey(x.name,x.roaster)===bkey(br.bean,br.roaster)&&(!br.beanId||x.id===br.beanId)))||(br.bean&&all.find(x=>bkey(x.name,x.roaster)===bkey(br.bean,br.roaster)))||all.find(x=>x.id===br.beanId)||null}
+/* One roaster written two ways. Fold the short spelling into the full one, once. */
+const ROASTER_FIX={"meraki":"Meraki Roasters"};
+function migrateRoasters(){
+  if(db||lsGet("mig-roaster",0)>=1)return 0;
+  let n=0;
+  const fix=o=>{const k=String(o.roaster||"").trim().toLowerCase();
+    if(ROASTER_FIX[k]&&o.roaster!==ROASTER_FIX[k]){o.roaster=ROASTER_FIX[k];n++;return true}
+    return false};
+  let tb=false,tr=false;
+  beans.forEach(b=>{if(fix(b))tb=true});
+  brews.forEach(b=>{if(fix(b))tr=true});
+  lsSet("mig-roaster",1);
+  if(tb)lsSet("beans-local",beans);
+  if(tr)lsSet("brews-local",brews);
+  return n;
+}
 function migrateBeanIds(){
   if(db||lsGet("mig-beans",0)>=1)return 0;
   let made=0,moved=0;const fresh={};
@@ -1700,6 +1743,7 @@ $("#restoreFile").addEventListener("change",async e=>{
 });
 
 /* ---------- boot ---------- */
+migrateRoasters();
 const splitCount=migrateBeanIds();
 pick.value=cur.id;renderBrew();resetForm(true);renderAll();
 if(splitCount)setTimeout(()=>toast(`Separated ${splitCount} ${splitCount>1?"coffees":"coffee"} that shared one record`),900);
