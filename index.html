@@ -1484,14 +1484,32 @@ function onBeanPick(){
     b.roast&&`<span>${esc(b.roast)}</span>`, b.process&&`<span>${esc(b.process)}</span>`, d!=null&&restTag(d),
     st.remaining!=null&&`<span><b>${Math.max(0,Math.round(st.remaining))} g</b> left</span>`,
     st.best&&`<span>Best <b>${st.best.score}/10</b>${st.best.clicks!=null?` at ${st.best.clicks} clicks`:""}</span>`,
-    `<button type="button" class="linkbtn" data-editbean="${esc(b.id)}">Edit coffee</button>`
+    b.finished&&`<span><b>Bag finished</b></span>`,
+    `<button type="button" class="linkbtn" data-editbean="${esc(b.id)}">Edit coffee</button>`,
+    b.finished?`<button type="button" class="linkbtn" data-unfinish="${esc(b.id)}">Not finished after all</button>`
+              :`<button type="button" class="linkbtn" data-finishbag="${esc(b.id)}">Bag finished</button>`
   ].filter(Boolean).join("");
 }
 $("#fBeanPick").addEventListener("change",()=>{
   if($("#fBeanPick").value==="__new"){["#fBean","#fRoaster","#fBag","#fRoast","#fProcess"].forEach(i=>$(i).value="");setTimeout(()=>$("#fBean").focus(),0)}
   onBeanPick();
 });
-$("#beanInfo").addEventListener("click",e=>{const b=e.target.closest("[data-editbean]");if(b){openBeanEditor(b.dataset.editbean);showTab("beans");window.scrollTo(0,0)}});
+async function setFinished(id,fin){
+  const b=allBeans().find(x=>x.id===id);if(!b)return;
+  try{
+    const nb=materialize(b,fin?{finished:true,finishedAt:Date.now()}:{finished:false});
+    await saveBean(nb);
+    const keep=$("#fBeanPick").value;
+    fillBeanPick(keep===id||keep===nb.id?nb.id:keep);renderCoach();
+    toast(fin?`${nb.name} moved to finished bags`:`${nb.name} is back in your list`);
+  }catch(err){toast("Could not update. Try again.")}
+}
+$("#beanInfo").addEventListener("click",e=>{
+  const ed=e.target.closest("[data-editbean]"),fi=e.target.closest("[data-finishbag]"),un=e.target.closest("[data-unfinish]");
+  if(ed){openBeanEditor(ed.dataset.editbean);showTab("beans");window.scrollTo(0,0);return}
+  if(fi)setFinished(fi.dataset.finishbag,true);
+  else if(un)setFinished(un.dataset.unfinish,false);
+});
 function materialize(b,extra){
   const nb=Object.assign({origin:"",variety:"",notes:"",bagWeight:null,finished:false},b,extra||{});
   if(b.virtual){nb.id=newId();delete nb.virtual}
@@ -1527,7 +1545,9 @@ function beanCard(b){
     </div>
     <div class="row" style="gap:6px">${b.roast?`<span class="tag plain">${esc(b.roast)}</span>`:""}${b.process?`<span class="tag plain">${esc(b.process)}</span>`:""}${d!=null?restTag(d):""}${b.virtual?`<span class="tag plain">From your log</span>`:""}</div>
     ${b.notes?`<div style="font-size:14px">${esc(b.notes)}</div>`:""}
-    ${pct!=null?`<div><div class="row between" style="font-size:13px;margin-bottom:4px"><span class="muted">Bag</span><span class="mono">${Math.round(left)} of ${b.bagWeight} g${st.avgDose?`, about ${Math.floor(left/st.avgDose)} brews`:""}</span></div><div class="bar${pct<20?" low":""}"><i style="width:${pct}%"></i></div></div>`:(b.finished?"":`<div class="muted" style="font-size:13px">Add the bag weight to track what is left.</div>`)}
+    ${b.finished?`<div class="muted" style="font-size:13px">Bag finished${st.count?` after ${st.count} logged ${st.count>1?"brews":"brew"}`:""}.</div>`
+      :pct!=null?`<div><div class="row between" style="font-size:13px;margin-bottom:4px"><span class="muted">Bag</span><span class="mono">${Math.round(left)} of ${b.bagWeight} g${st.avgDose?`, about ${Math.floor(left/st.avgDose)} brews`:""}</span></div><div class="bar${pct<20?" low":""}"><i style="width:${pct}%"></i></div></div>`
+      :`<div class="muted" style="font-size:13px">Add the bag weight to track what is left.</div>`}
     ${topFlav(b)}
     ${dialTable(b)}
     ${best?`<div class="mine">Best so far: ${best.score}/10, ${esc(br?recipeLabel(br):"own recipe")}${best.clicks!=null?`, ${best.clicks} clicks`:""}${best.temp!=null?`, ${best.temp} °C`:""}.</div>`:`<div class="muted" style="font-size:13px">No brews logged yet.</div>`}
@@ -1535,7 +1555,7 @@ function beanCard(b){
       <button class="btn small primary" data-logbean="${esc(b.id)}">Log a brew</button>
       ${best?`<button class="btn small" data-bestagain="${esc(best.id)}">Repeat best</button>`:""}
       <button class="btn small" data-editbean="${esc(b.id)}">Edit</button>
-      ${b.finished?`<button class="btn small" data-restock="${esc(b.id)}">New bag</button>`:`<button class="btn small" data-finish="${esc(b.id)}">Bag finished</button>`}
+      ${b.finished?`<button class="btn small" data-restock="${esc(b.id)}">New bag</button><button class="btn small" data-unfin="${esc(b.id)}">Not finished</button>`:`<button class="btn small" data-finish="${esc(b.id)}">Bag finished</button>`}
     </div>
   </article>`;
 }
@@ -1581,14 +1601,14 @@ $("#beanForm").addEventListener("submit",async e=>{
   finally{$("#beanSave").disabled=false}
 });
 $("#p-beans").addEventListener("click",async e=>{
-  const t=e.target.closest("[data-logbean],[data-bestagain],[data-editbean],[data-finish],[data-restock]");if(!t)return;
+  const t=e.target.closest("[data-logbean],[data-bestagain],[data-editbean],[data-finish],[data-unfin],[data-restock]");if(!t)return;
   const d=t.dataset;
   if(d.logbean){resetForm(true);fillBeanPick(d.logbean);showTab("log");window.scrollTo(0,0)}
   else if(d.bestagain){const b=brews.find(x=>x.id===d.bestagain);if(b)loadBrew(b,false)}
   else if(d.editbean){openBeanEditor(d.editbean);window.scrollTo(0,0)}
   else if(d.restock){openBeanEditor(d.restock,true);window.scrollTo(0,0)}
-  else if(d.finish){const b=allBeans().find(x=>x.id===d.finish);if(!b)return;
-    try{await saveBean(materialize(b,{finished:true}));toast("Moved to finished bags")}catch(err){toast("Could not update. Try again.")}}
+  else if(d.finish)await setFinished(d.finish,true);
+  else if(d.unfin)await setFinished(d.unfin,false);
 });
 
 /* ---------- guide and exercises ---------- */
