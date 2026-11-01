@@ -132,6 +132,14 @@ form.log{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .f input[type=range]{padding:0;border:0;background:transparent;accent-color:var(--ink)}
 .scale{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
 .hint{font-size:13px;border-radius:8px;padding:10px 12px;background:var(--sunk)}
+.coach{border-left:3px solid var(--press)}
+.coach.blocked{border-left-color:var(--warn)}
+.coach.done{border-left-color:var(--good)}
+.chead{font-family:var(--display);font-size:19px;line-height:1.25;margin:6px 0 4px;letter-spacing:-.01em}
+.cbody{font-size:14px;color:var(--muted);margin:0 0 10px;line-height:1.5}
+.ctar{display:flex;flex-wrap:wrap;gap:4px;margin:10px 0 2px}
+.ctar span{font-family:var(--mono);font-size:12px;background:var(--sunk);border-radius:5px;padding:3px 7px;white-space:nowrap}
+.ctar span.chg{background:var(--press);color:var(--on-accent)}
 @media (max-width:460px){form.log{grid-template-columns:minmax(0,1fr)}}
 
 /* history */
@@ -261,6 +269,7 @@ ol.plain{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
   <!-- LOG -->
   <section class="panel" id="p-log" hidden>
     <div class="stats" id="logStats"></div>
+    <div class="box panel coach" id="coachCard" hidden></div>
     <div class="box panel">
       <div class="row between"><h2 id="formTitle">New brew</h2><button class="btn small" id="clearForm" type="button">Clear</button></div>
       <form class="log" id="logForm" autocomplete="off">
@@ -274,14 +283,14 @@ ol.plain{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
           <div class="muted small" id="roastNote">Bought the same coffee again? Just set the new date. It starts a new bag and the grams left resets.</div></div>
         <div class="sub wide" id="newBean" hidden>
           <div class="f"><label for="fBean">Coffee name</label><input id="fBean" placeholder="Guava Jelly"></div>
-          <div class="f"><label for="fRoaster">Roaster</label><input id="fRoaster" list="roasterList"></div>
+          <div class="f"><label for="fRoasterPick">Roaster</label><select id="fRoasterPick"></select></div>
+          <div class="f" id="fRoasterNewWrap" hidden><label for="fRoaster">New roaster name</label><input id="fRoaster" placeholder="Meraki"></div>
           <div class="f"><label for="fRoast">Roast</label>
             <select id="fRoast"><option value="">Not set</option><option>Light</option><option>Medium light</option><option>Medium</option><option>Medium dark</option><option>Dark</option></select></div>
           <div class="f"><label for="fProcess">Process</label>
             <select id="fProcess"><option value="">Not set</option><option>Washed</option><option>Natural</option><option>Honey</option><option>Anaerobic</option><option>Other</option></select></div>
           <div class="f"><label for="fBag">Bag weight (g)</label><input id="fBag" type="number" inputmode="decimal" min="0" step="1" placeholder="250"></div>
         </div>
-        <datalist id="roasterList"></datalist>
         <div class="f"><label for="fClicks">C5 clicks</label><input id="fClicks" type="number" inputmode="decimal" step="0.5" min="0" max="48"></div>
         <div class="f"><label for="fDose">Coffee (g)</label><input id="fDose" type="number" inputmode="decimal" step="0.1" min="0"></div>
         <div class="f"><label for="fWater">Water (g)</label><input id="fWater" type="number" inputmode="decimal" step="1" min="0"></div>
@@ -293,10 +302,13 @@ ol.plain{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
         <div class="f wide"><label id="extLbl">Extraction</label>
           <div class="opts" id="fExtraction" role="group" aria-labelledby="extLbl"><button type="button" class="opt" data-v="sour" aria-pressed="false">Sour, thin</button><button type="button" class="opt" data-v="balanced" aria-pressed="false">Balanced</button><button type="button" class="opt" data-v="bitter" aria-pressed="false">Bitter</button><button type="button" class="opt" data-v="dry" aria-pressed="false">Drying</button></div>
           <div class="muted small">Sour and thin means under extracted, bitter or drying means over. Fixed with grind and temperature. <button type="button" class="linkbtn small" data-guide="taste">How to tell them apart</button></div></div>
+        <div class="f wide"><label id="bugLbl">What bugged you most</label>
+          <div class="chips" id="fBug" role="group" aria-labelledby="bugLbl"></div>
+          <div class="muted small">One thing only, the thing you would fix first. This is what the coaching reads.</div></div>
+        <div class="f wide"><label id="vsLbl">Against the last brew of this bag</label>
+          <div class="opts" id="fVs" role="group" aria-labelledby="vsLbl"><button type="button" class="opt" data-v="worse" aria-pressed="false">Worse</button><button type="button" class="opt" data-v="same" aria-pressed="false">About the same</button><button type="button" class="opt" data-v="better" aria-pressed="false">Better</button></div>
+          <div class="muted small">Easier to judge than a number, and it is what tells the app whether its last suggestion worked.</div></div>
         <div class="hint wide" id="tasteHint" hidden></div>
-        <div class="f"><label for="fSweet">Sweetness <span class="num" id="vSweet">3</span></label><input id="fSweet" type="range" min="1" max="5" value="3"><div class="scale"><span>low</span><span>high</span></div></div>
-        <div class="f"><label for="fAcid">Acidity <span class="num" id="vAcid">3</span></label><input id="fAcid" type="range" min="1" max="5" value="3"><div class="scale"><span>flat</span><span>bright</span></div></div>
-        <div class="f"><label for="fBody">Body <span class="num" id="vBody">3</span></label><input id="fBody" type="range" min="1" max="5" value="3"><div class="scale"><span>light</span><span>heavy</span></div></div>
         <div class="f"><label for="fScore">Overall <span class="num" id="vScore">7</span>/10</label><input id="fScore" type="range" min="1" max="10" value="7"><div class="scale"><span>1</span><span>10</span></div></div>
         <div class="f wide"><label id="flavLbl">Flavours</label>
           <div class="muted small">Start broad. Stopping at Fruity is a correct answer, go further only when you are sure.</div>
@@ -340,7 +352,8 @@ ol.plain{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
       <h3 id="beanEdTitle">Add coffee</h3>
       <form class="log" id="beanForm" autocomplete="off">
         <div class="f"><label for="bName">Coffee name</label><input id="bName" required></div>
-        <div class="f"><label for="bRoaster">Roaster</label><input id="bRoaster" list="roasterList"></div>
+        <div class="f"><label for="bRoasterPick">Roaster</label><select id="bRoasterPick"></select></div>
+        <div class="f" id="bRoasterNewWrap" hidden><label for="bRoaster">New roaster name</label><input id="bRoaster" placeholder="Meraki"></div>
         <div class="f"><label for="bOrigin">Origin</label><input id="bOrigin" placeholder="Colombia, Huila"></div>
         <div class="f"><label for="bVariety">Variety</label><input id="bVariety" placeholder="Pink Bourbon"></div>
         <div class="f"><label for="bRoast">Roast</label>
@@ -665,7 +678,7 @@ function chipGroup(el,onChange){
 let brews = lsGet("brews-local",[]);
 let beans = lsGet("beans-local",[]);
 let db = null;
-function renderAll(){renderHistory();renderRecipes();renderBeans();fillBeanPick();if(document.getElementById("backupNote"))backupNote()}
+function renderAll(){renderHistory();renderRecipes();renderBeans();fillBeanPick();renderCoach();if(document.getElementById("backupNote"))backupNote()}
 function setSync(on,text){$("#syncDot").classList.toggle("on",on);$("#syncText").textContent=text}
 setSync(true,"Saved on this phone");
 (async()=>{try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){}})();
@@ -840,12 +853,12 @@ function resetForm(clearCoffee=true){
   const act=activeBeans();lastPickId=null;
   fillBeanPick(clearCoffee||!keepBean||keepBean==="__new" ? (act[0]?act[0].id:"__new") : keepBean);
   $("#fNotes").placeholder="Acidity, sweetness, body, finish. Then what it reminds you of.";setFlav([]);setMouth([]);setOpt("fStrength","");setOpt("fExtraction","");autoNext="";
-  ["Sweet","Acid","Body","Score"].forEach(k=>$("#v"+k).textContent=$("#f"+k).value);
-  updateHint();updateRatio();
+  $("#vScore").textContent=$("#fScore").value;setPick("fBug","");setOpt("fVs","");
+  updateHint();updateRatio();renderCoach();
 }
 $("#fDevice").addEventListener("change",()=>fillRecipeOptions($("#fDevice").value));
 fRecipe.addEventListener("change",()=>{if(fRecipe.value)prefillFromRecipe(fRecipe.value)});
-["Sweet","Acid","Body","Score"].forEach(k=>$("#f"+k).addEventListener("input",()=>$("#v"+k).textContent=$("#f"+k).value));
+$("#fScore").addEventListener("input",()=>$("#vScore").textContent=$("#fScore").value);
 function updateRatio(){const d=+$("#fDose").value,w=+$("#fWater").value;$("#ratioOut").textContent=d&&w?`Ratio ${ratio(d,w)}`:""}
 $("#fDose").addEventListener("input",updateRatio);$("#fWater").addEventListener("input",updateRatio);
 $("#clearForm").addEventListener("click",()=>resetForm(true));
@@ -854,6 +867,7 @@ $("#logForm").addEventListener("submit",async e=>{
   e.preventDefault();
   const num=id=>{const v=$(id).value;return v===""?null:+v};
   $("#saveBtn").disabled=true;
+  const savedCtxKey=bagCtx().key;
   try{
     const bn=await resolveBeanForSave();
     const obj={
@@ -861,10 +875,16 @@ $("#logForm").addEventListener("submit",async e=>{
       date:$("#fDate").value, device:$("#fDevice").value, recipe:fRecipe.value,
       beanId:bn?bn.id:"", bean:bn?bn.name:"", roaster:bn?bn.roaster||"":"", roast:bn?bn.roast||"":"", process:bn?bn.process||"":"", roastDate:bn?bn.roastDate||"":"",
       clicks:num("#fClicks"), dose:num("#fDose"), water:num("#fWater"), temp:num("#fTemp"), time:parseTime($("#fTime").value),
-      strength:getOpt("fStrength"), extraction:getOpt("fExtraction"), sweet:+$("#fSweet").value, acid:+$("#fAcid").value, body:+$("#fBody").value, score:+$("#fScore").value,
+      strength:getOpt("fStrength"), extraction:getOpt("fExtraction"), bug:getPick("fBug"), vs:getOpt("fVs"), score:+$("#fScore").value,
       flavours:getFlav(), mouth:getMouth(), notes:$("#fNotes").value.trim(), next:$("#fNext").value.trim(),
       created: editingId ? (brews.find(b=>b.id===editingId)?.created||Date.now()) : Date.now()
     };
+    if(editingId){const old=brews.find(x=>x.id===editingId)||{};obj.advice=old.advice||null;["sweet","acid","body"].forEach(k=>{if(old[k]!=null)obj[k]=old[k]})}
+    else{
+      const lane=laneOf(obj),keys=["pend|"+bagKey(obj)+"|"+lane,"pend|"+savedCtxKey+"|"+lane];
+      for(const ck of keys){const pd=lsGet(ck,null);
+        if(pd){obj.advice={rule:pd.rule||"",variable:pd.variable||"",dir:pd.dir||"",amt:pd.amt||0,pred:pd.pred||""};try{localStorage.removeItem(ck)}catch(e){}break}}
+    }
     const wasEdit=!!editingId;
     await saveBrew(obj);toast(wasEdit?"Brew updated":"Brew saved");resetForm(true);
   }
@@ -915,17 +935,378 @@ renderWheel();
 /* strength and extraction */
 function getOpt(id){const b=document.querySelector(`#${id} .opt[aria-pressed="true"]`);return b?b.dataset.v:""}
 function setOpt(id,v){document.querySelectorAll(`#${id} .opt`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===v)))}
-const XH={sour:"Grind 1 to 2 clicks finer, or brew 2 to 3 °C hotter. Change one of the two.",bitter:"Grind 1 to 2 clicks coarser, or brew 2 to 3 °C cooler.",dry:"Grind 1 to 2 clicks coarser and agitate less. Drying usually comes from fines or pressing through the hiss.",balanced:""};
-const SH={weak:"Use 1 g more coffee, or less water or bypass.",strong:"Add 20 to 30 g water to the cup, or use 1 g less coffee.",right:""};
-function hintText(){return [XH[getOpt("fExtraction")],SH[getOpt("fStrength")]].filter(Boolean).join(" ")}
+/* ---------- dial-in coach ---------- */
+const BUGS=[["sharp","Sharp, hollow"],["bitter","Bitter"],["dry","Dry, rough"],["thin","Thin, watery"],["flat","Flat, no sweetness"],["muddy","Muddy, heavy"],["none","Nothing much"]];
+const LANE={ap:"AeroPress","sw-perc":"Switch, valve open","sw-imm":"Switch, valve closed","sw-hyb":"Switch, 50/50"};
+const STEPS={ap:[2,4],"sw-perc":[3,6],"sw-hyb":[3,6],"sw-imm":[4,8]};
+function n1(s){const m=String(s??"").match(/\d+(\.\d+)?/);return m?+m[0]:null}
+function normBrew(b){
+  const t=b.taste||"";
+  return Object.assign({},b,{
+    device:b.device||"ap", recipe:b.recipe||"", bean:b.bean||"", roaster:b.roaster||"", roast:b.roast||"", roastDate:b.roastDate||"",
+    clicks:b.clicks==null?null:+b.clicks, dose:b.dose==null?null:+b.dose, water:b.water==null?null:+b.water,
+    temp:b.temp==null?null:+b.temp, time:b.time==null?null:+b.time, score:b.score==null?null:+b.score,
+    strength:b.strength||(t==="weak"||t==="strong"?t:""),
+    extraction:b.extraction||(["sour","bitter","balanced"].includes(t)?t:""),
+    flavours:b.flavours||[], mouth:b.mouth||[], bug:b.bug||"", vs:b.vs||"", advice:b.advice||null, created:b.created||0
+  });
+}
+const bagKey=b=>[String(b.bean||"").trim().toLowerCase(),String(b.roaster||"").trim().toLowerCase(),b.roastDate||""].join("|");
+function swMode(r){
+  if(!r||r.dev!=="sw"||!r.steps||!r.steps.length)return "hyb";
+  const end=r.steps[r.steps.length-1].t||1;let closed=0,at=null;
+  r.steps.forEach(s=>{if(s.v==="closed"&&at===null)at=s.t;else if(s.v==="open"&&at!==null){closed+=s.t-at;at=null}});
+  if(at!==null)closed+=end-at;
+  const f=end?closed/end:0;
+  return f>=.6?"imm":f<=.2?"perc":"hyb";
+}
+function laneOf(b){return b.device==="sw"?"sw-"+swMode(byId[b.recipe]):"ap"}
+function stepSize(b,big){
+  const s=(STEPS[laneOf(b)]||STEPS.ap)[big?1:0],r=String(b.roast||"").toLowerCase();
+  return Math.max(1,s+(r.includes("light")?1:r.includes("dark")?-1:0));
+}
+const TMAX=97;
+function tempUp(b,by){const t=b.temp;return t!=null&&t+by<=TMAX?t+by:null}
+function recipeWindow(r){
+  if(!r||!r.steps||!r.steps.length)return null;
+  const last=r.steps[r.steps.length-1],t=last.t;if(!(t>0))return null;
+  const done=/^done\b/i.test(String(last.a||""));
+  return {mid:t,lo:Math.round(t*.75),hi:Math.round((done?t:t+45)*1.25)};
+}
+function outsideWindow(w,time){return w&&time!=null&&(time<w.lo||time>w.hi)}
+function ageAt(b){return (b.roastDate&&b.date)?Math.round((new Date(b.date)-new Date(b.roastDate))/864e5):null}
+function settingLine(b){return [b.clicks!=null&&b.clicks+" clicks",b.dose!=null&&b.dose+" g",b.water!=null&&b.water+" g",b.temp!=null&&b.temp+" °C"].filter(Boolean).join(", ")}
+function bagBrews(key,lane){
+  return brews.map(normBrew).filter(b=>bagKey(b)===key&&laneOf(b)===lane)
+    .sort((a,b)=>(a.date||"").localeCompare(b.date||"")||(a.created||0)-(b.created||0));
+}
+function ruleRecord(id){
+  if(!id)return {n:0,hit:0};
+  const by={};
+  brews.map(normBrew).forEach(b=>{const k=bagKey(b)+"|"+laneOf(b);(by[k]=by[k]||[]).push(b)});
+  let n=0,hit=0;
+  Object.values(by).forEach(l=>{
+    l.sort((a,b)=>(a.date||"").localeCompare(b.date||"")||(a.created||0)-(b.created||0));
+    l.forEach((b,i)=>{
+      if(!b.advice||b.advice.rule!==id||b.score==null)return;
+      const p=l[i-1];if(!p||p.score==null)return;
+      n++;if(b.score>p.score)hit++;
+    });
+  });
+  return {n,hit};
+}
+function suppressed(id){const r=ruleRecord(id);return r.n>=6&&r.hit/r.n<0.5}
+
+function refineMove(b,big){
+  const amt=stepSize(b,big),x=b.extraction,st=b.strength,c=b.clicks,t=b.temp;
+  const hold=`Hold ${b.dose!=null?b.dose+" g":"the dose"} to ${b.water!=null?b.water+" g":"the water"}${t!=null?` and ${t} °C`:""}. Nothing else moves.`;
+  const base={recipe:b.recipe,clicks:c,dose:b.dose,water:b.water,temp:t};
+  const ln=(LANE[laneOf(b)]||"this brewer").toLowerCase();
+  const grindHold=`Keep ${c!=null?c+" clicks":"the grind"} and the same ratio.`;
+  if(x==="sour"||(!x&&(b.bug==="sharp"||b.bug==="thin"))){
+    if(c!=null&&!suppressed("grind-finer"))
+      return {rule:"grind-finer",variable:"grind",dir:"finer",amt,head:`Go to ${c-amt} clicks, ${amt} finer.`,
+        body:`Sharp and hollow means the water ran out before it took the sweetness. On the ${ln}, ${amt} clicks is the smallest move you will reliably taste, so a single click would only cost you a brew.`,
+        hold,target:Object.assign({},base,{clicks:c-amt})};
+    const up3=tempUp(b,3);
+    if(up3!=null)
+      return {rule:"temp-up",variable:"temp",dir:"up",amt:3,
+        head:`Hold the grind and brew at ${up3} °C.`,
+        body:`Grinding finer has not been paying off on this coffee, so push the other lever. Hotter water pulls more sweetness at the same grind.`,
+        hold:grindHold,target:Object.assign({},base,{temp:up3})};
+    return {rule:"ratio-stronger",variable:"ratio",dir:"stronger",amt:1,
+      head:b.dose!=null?`Use ${round1(b.dose+1)} g of coffee and leave everything else.`:"Use 1 g more coffee and leave everything else.",
+      body:`Finer has not helped and you are already at the top of the kettle, so the lever left is the ratio. More coffee against the same water gives the cup something to stand on.`,
+      hold:`Keep ${c!=null?c+" clicks":"the grind"}${t!=null?` and ${t} °C`:""} and the same water.`,
+      target:Object.assign({},base,{dose:b.dose!=null?round1(b.dose+1):null})};
+  }
+  if((x==="bitter"||b.bug==="bitter")&&c!=null)
+    return {rule:"grind-coarser",variable:"grind",dir:"coarser",amt,head:`Go to ${c+amt} clicks, ${amt} coarser.`,
+      body:`Bitterness is the water still working after the sweetness has gone. Opening the grind shortens the part of the brew where that happens.`,
+      hold,target:Object.assign({},base,{clicks:c+amt})};
+  if((x==="dry"||b.bug==="dry")&&c!=null)
+    return {rule:"grind-coarser-dry",variable:"grind",dir:"coarser",amt,head:`Go to ${c+amt} clicks and stir less.`,
+      body:`A rough, drying finish usually comes from fines rather than from time. Coarser makes fewer of them, and a gentler stir stops you making more.`,
+      hold,target:Object.assign({},base,{clicks:c+amt})};
+  if(b.bug==="muddy"&&c!=null)
+    return {rule:"grind-coarser-muddy",variable:"grind",dir:"coarser",amt,head:`Go to ${c+amt} clicks and press slower.`,
+      body:`Muddy and heavy is fines in the cup, not strength. Coarser grounds and a slower press keep them in the filter.`,
+      hold,target:Object.assign({},base,{clicks:c+amt})};
+  if(st==="weak"||b.bug==="thin"||b.bug==="flat")
+    return {rule:"ratio-stronger",variable:"ratio",dir:"stronger",amt:1,
+      head:b.dose!=null?`Keep the grind and use ${round1(b.dose+1)} g of coffee.`:"Keep the grind and use 1 g more coffee.",
+      body:`Thin with the extraction in the right place is a ratio problem, not a grind problem. One more gram against the same water makes the cup denser without changing what the water pulls out.`,
+      hold:`Keep ${c!=null?c+" clicks":"the grind"}${t!=null?` and ${t} °C`:""} and the same water.`,
+      target:Object.assign({},base,{dose:b.dose!=null?round1(b.dose+1):null})};
+  if(st==="strong")
+    return {rule:"ratio-weaker",variable:"ratio",dir:"weaker",amt:25,head:"Brew it the same and add 25 g of water to the cup.",
+      body:`Too intense with the extraction right is the easiest fix in coffee. Water the finished cup rather than rebrewing, and you find out what strength you actually want.`,
+      hold:`Keep ${c!=null?c+" clicks":"the grind"} and the same brew.`,target:base};
+  if(x==="balanced"&&(st==="right"||!st)){
+    if((b.score||0)>=8)
+      return {rule:"hold",variable:"",dir:"",amt:0,head:"Nothing to change. Brew it again the same way.",
+        body:`Balanced, right strength, ${b.score} out of 10. Repeat it once to prove it is the setting and not the morning.`,hold:"",target:base,done:true};
+    const up2=tempUp(b,2);
+    if(up2!=null)
+      return {rule:"temp-up-sweet",variable:"temp",dir:"up",amt:2,
+        head:`Brew at ${up2} °C.`,
+        body:`Extraction and strength are both in the right place, so the cup is not broken, it is quiet. A small rise in temperature is the cheapest way to find sweetness without disturbing either.`,
+        hold:grindHold,target:Object.assign({},base,{temp:up2})};
+    const half=Math.max(1,Math.round(amt/2));
+    if(c!=null)
+      return {rule:"nudge-finer",variable:"grind",dir:"finer",amt:half,
+        head:`Go to ${c-half} clicks, ${half} finer.`,
+        body:`Nothing is wrong with this cup, it is just quiet, and the kettle has nothing left to give. A half step finer is the smallest honest thing to try, and it is reversible in one brew.`,
+        hold:grindHold,target:Object.assign({},base,{clicks:c-half})};
+    return {rule:"hold",variable:"",dir:"",amt:0,head:"Brew it again the same way.",
+      body:`Nothing in the log points anywhere, so repeat it once and see whether the cup or the morning was the variable.`,hold:"",target:base,done:true};
+  }
+  return null;
+}
+
+function liveAdvice(b){
+  const age=ageAt(b);
+  if(age!=null&&age<5)
+    return {rule:"resting",head:`Day ${age} off roast.`,
+      body:`Log it, but do not read the grind off this cup. Under five days the gas still coming out of the bag pushes water away from the grounds, which tastes exactly like grinding too coarse. Brew it again on day five or six at the same settings.`};
+  if(age!=null&&age>28)
+    return {rule:"stale",head:`Day ${age} off roast.`,
+      body:`Past four weeks a bag goes flat and papery whatever the grinder does. Finish this one on milk or over ice and start dialling on the next bag.`};
+  if(b.extraction==="sour"&&["bitter","dry"].includes(b.bug))
+    return {rule:"uneven",head:"Sharp and bitter at once. Leave the grinder alone.",
+      body:`That pair means the water took too much from some grounds and too little from others. Finer makes both ends worse together. Keep ${b.clicks!=null?b.clicks+" clicks":"the grind"}, raise the water ${b.temp!=null?`to ${b.temp+3} °C`:"by 3 °C"} and wet the whole bed on the first pour.`};
+  const win=recipeWindow(byId[b.recipe]);
+  if(outsideWindow(win,b.time))
+    return {rule:"time",head:`${mmss(b.time)} against the recipe's ${mmss(win.mid)}.`,
+      body:`The timing is far enough out that it explains the cup better than the grind does. Run it to the recipe's clock once before you change a setting.`};
+  return refineMove(b,(b.score==null?7:b.score)<=4)||
+    {rule:"",head:"Tap how strong it was and how it extracted.",body:"Two taps and this turns into a number to change."};
+}
+
+function coach(key,lane,roastDate,roast){
+  const l=bagBrews(key,lane),last=l[l.length-1],prev=l[l.length-2];
+  const lab=(LANE[lane]||lane).toLowerCase();
+  const blocked=(rule,head,body,hold,target,extra)=>Object.assign({state:"blocked",rule,badge:"Not the grind",head,body,hold,target},extra||{});
+
+  if(!last){
+    const inLane=brews.map(normBrew).filter(b=>laneOf(b)===lane&&b.score!=null);
+    let r=inLane.length?byId[inLane.slice().sort((a,b)=>b.score-a.score)[0].recipe]:null;
+    r=r||R.find(x=>x.dev===(lane==="ap"?"ap":"sw"))||R[0];
+    const base=n1(r.c5),rl=String(roast||"").toLowerCase();
+    const adj=rl.includes("light")?-1:rl.includes("dark")?1:0;
+    const c=base!=null?base+adj:null;
+    const age=roastDate?Math.round((new Date(today())-new Date(roastDate))/864e5):null;
+    return {state:"start",rule:"start",badge:"First brew of this bag",
+      head:c!=null?`Start at ${c} clicks on ${recipeLabel(r)}.`:`Start on ${recipeLabel(r)}.`,
+      body:[`Nothing logged for this bag on the ${lab} yet, so there is no history to read. That number is the recipe's own estimate${adj?`, moved one click ${adj<0?"finer for the light roast":"coarser for the dark roast"}`:""}.`,
+        age!=null&&age<5?`It is day ${age} off roast, so treat the first cup as a reading rather than a result.`:"",
+        age!=null&&age>28?`It is day ${age} off roast, which flattens the cup whatever you do with the grinder.`:""].filter(Boolean).join(" "),
+      hold:"Brew it as written and log it. The coaching starts on the second brew.",
+      target:{recipe:r.id,clicks:c,dose:r.dose,water:r.water,temp:n1(r.temp)}};
+  }
+
+  const T={recipe:last.recipe,clicks:last.clicks,dose:last.dose,water:last.water,temp:last.temp};
+  const age=ageAt(last);
+
+  if(age!=null&&age<5)
+    return blocked("resting",`Day ${age} off roast. Wait before you touch the grinder.`,
+      `This bag was ${age} days off roast when you brewed it. A fresh bag is still giving off gas, which keeps water off the grounds and reads as sour and thin however fine you go. Grind finer now and you will have to undo it in three days.`,
+      `Brew it the same way, ${settingLine(last)}, on day five or six and log that. If you want coffee before then, raise the water 2 to 3 °C instead.`,T);
+  if(age!=null&&age>28)
+    return blocked("stale",`Day ${age} off roast. This is the bag, not the grind.`,
+      `Past four weeks the aromatics are gone and the cup goes flat and papery. No grind setting brings that back, so a dialling run on this bag teaches you nothing you can carry to the next one.`,
+      `Finish it on milk or over ice. Start the dialling fresh on the next bag.`,T);
+  if(last.extraction==="sour"&&["bitter","dry"].includes(last.bug)){
+    const up=tempUp(last,3);
+    return blocked("uneven","Sharp and bitter in one cup. Do not move the grinder.",
+      `Sour and bitter together means the water took too much from some grounds and too little from others. A finer grind makes both ends worse at the same time, which is why this one feels unfixable. The cause is normally an uneven pour, a dry patch in the bed, or water too cool at the start.`,
+      up!=null
+        ? `Keep ${last.clicks!=null?last.clicks+" clicks":"the grind"} and go to ${up} °C. Wet the whole bed in the first pour. Change nothing else.`
+        : `Keep ${last.clicks!=null?last.clicks+" clicks":"the grind"} and the temperature, you are already at the top of the kettle. Fix the pour instead. Wet the whole bed before the water finds a channel, and stir gently rather than hard.`,
+      up!=null?Object.assign({},T,{temp:up}):T,up!=null?{variable:"temp",dir:"up",amt:3}:{variable:"pour",dir:"even",amt:0});
+  }
+  if(prev&&prev.recipe!==last.recipe)
+    return blocked("recipe-switch",`You switched recipe between the last two brews. They do not compare.`,
+      `${prev.date} was ${byId[prev.recipe]?recipeLabel(byId[prev.recipe]):"another recipe"} and ${last.date} was ${byId[last.recipe]?recipeLabel(byId[last.recipe]):"another recipe"}. Different dose, different water, different contact time, so the two cups cannot tell you anything about each other. Dialling in means holding the recipe still and moving one thing inside it.`,
+      `Pick the one you want to live with and brew it twice. ${settingLine(last)} is where you left off.`,T);
+  if(prev){
+    const ch=[];
+    if(prev.clicks!=null&&last.clicks!=null&&prev.clicks!==last.clicks)ch.push("the grind");
+    if(prev.temp!=null&&last.temp!=null&&Math.abs(prev.temp-last.temp)>=2)ch.push("the temperature");
+    if(prev.dose!=null&&last.dose!=null&&Math.abs(prev.dose-last.dose)>=0.5)ch.push("the dose");
+    const pr=prev.dose&&prev.water?prev.water/prev.dose:null,lr=last.dose&&last.water?last.water/last.dose:null;
+    if(pr&&lr&&Math.abs(pr-lr)>0.3)ch.push("the ratio");
+    if(ch.length>1)
+      return blocked("two-vars",`You moved ${ch.length} things at once. I cannot tell you which one did it.`,
+        `Between ${prev.date} and ${last.date}, ${ch.slice(0,-1).join(", ")} and ${ch.slice(-1)} all changed. The cup moved, but nothing in the log says what moved it, so any reason I give you now is a guess wearing a reason's clothes.`,
+        `Brew it again at exactly the last settings, ${settingLine(last)}. One repeat costs you ten minutes and buys the whole history back.`,T);
+  }
+  if(l.length>=3){
+    const a=l[l.length-3];
+    if([a,prev,last].every(x=>x.clicks!=null)){
+      const d1=prev.clicks-a.clicks,d2=last.clicks-prev.clicks;
+      const flat=[a,prev,last].every(x=>x.score!=null)&&Math.abs(last.score-a.score)<=1&&Math.abs(prev.score-a.score)<=1&&Math.abs(prev.score-last.score)<=1;
+      if(d1&&d2&&Math.sign(d1)===Math.sign(d2)&&Math.abs(d1+d2)>=stepSize(last,true)&&flat){
+        const up=tempUp(last,4);
+        return blocked("plateau",`${Math.abs(d1+d2)} clicks ${d1<0?"finer":"coarser"} and the cup did not move. Stop grinding.`,
+          `You went from ${a.clicks} to ${last.clicks} clicks and the score went ${a.score} to ${last.score}. When a move that size changes nothing, the grind is not what is holding this coffee back.`,
+          up!=null
+            ? `Keep ${last.clicks} clicks and go after the water. Try ${up} °C, or hold the temperature and change the ratio instead.`
+            : `Keep ${last.clicks} clicks. You are at the top of the kettle already, so the lever left is the ratio. Use 1 g more coffee against the same water.`,
+          up!=null?Object.assign({},T,{temp:up}):Object.assign({},T,{dose:last.dose!=null?round1(last.dose+1):null}),
+          up!=null?{variable:"temp",dir:"up",amt:4}:{variable:"ratio",dir:"stronger",amt:1});}
+    }
+  }
+  const win=recipeWindow(byId[last.recipe]);
+  if(outsideWindow(win,last.time))
+    return blocked("time",`${mmss(last.time)} against the recipe's ${mmss(win.mid)}. Fix the process first.`,
+      `The last brew ran ${last.time>win.hi?"long":"short"} enough that the timing explains the cup better than the grind does. Changing clicks now just hides it.`,
+      `Brew ${settingLine(last)} again and hold the recipe's clock to ${mmss(win.mid)}. Then read the cup.`,T);
+
+  if(prev&&last.clicks!=null&&prev.clicks===last.clicks&&(last.score||0)>=8&&(prev.score||0)>=8)
+    return {state:"dialled",rule:"dialled",badge:"Dialled in",
+      head:`${last.clicks} clicks is your setting for this bag.`,
+      body:`Two brews running at ${last.clicks} clicks, scoring ${prev.score} and ${last.score}. That is as much proof as a bag this size can give you, so I am not going to suggest a change.`,
+      hold:`Brew ${settingLine(last)} and spend the attention on the pour instead of the grinder.`,
+      target:T,done:true};
+
+  const byClick={};
+  l.forEach(b=>{if(b.clicks==null||b.score==null)return;byClick[b.clicks]=Math.max(byClick[b.clicks]??0,b.score)});
+  const pts=Object.keys(byClick).map(k=>({c:+k,s:byClick[k]})).sort((a,b)=>a.c-b.c);
+  if(pts.length>=3){
+    let pk=null;
+    pts.forEach((p,i)=>{if(i>0&&i<pts.length-1&&p.s>pts[i-1].s&&p.s>pts[i+1].s&&(!pk||p.s>pk.s))pk=Object.assign({},p,{lo:pts[i-1],hi:pts[i+1]})});
+    if(pk){
+      const up=pk.hi.s>=pk.lo.s,nb=up?pk.hi:pk.lo,dir=up?1:-1;
+      const tried=new Set(pts.map(p=>p.c));
+      let t=null;
+      for(let g=Math.max(1,Math.round(Math.abs(nb.c-pk.c)/2));g<Math.abs(nb.c-pk.c);g++){
+        const cand=pk.c+dir*g;if(!tried.has(cand)){t=cand;break}
+      }
+      if(t==null)
+        return {state:"dialled",rule:"bracket-closed",badge:"Bracketed as tight as it goes",
+          head:`${pk.c} clicks is the answer for this bag.`,
+          body:`You have brewed ${pk.lo.c}, ${pk.c} and ${pk.hi.c} clicks and scored ${pk.lo.s}, ${pk.s} and ${pk.hi.s}. The peak is boxed in on both sides with no untried click left between them, which is as close as a C5 can get you on this coffee.`,
+          hold:`Brew ${pk.c} clicks and leave the grinder alone. The attention is better spent on the pour.`,
+          target:Object.assign({},T,{clicks:pk.c}),done:true};
+      const step=Math.abs(t-pk.c);
+      return {state:"bracket",rule:"bracket",badge:`Bracketed, ${pk.lo.c} to ${pk.hi.c} clicks`,
+        head:`Try ${t} clicks.`,
+        body:`${pk.c} clicks scored ${pk.s} and it beats both sides, ${pk.lo.c} gave you ${pk.lo.s} and ${pk.hi.c} gave you ${pk.hi.s}. The good setting sits inside that bracket, so the step shrinks from ${stepSize(last)} to ${step}. The ${up?"coarse":"fine"} side held up better, so ${t} is the untried click worth spending a brew on.`,
+        hold:`Hold ${last.dose!=null?last.dose+" g":"the dose"} to ${last.water!=null?last.water+" g":"the water"}${last.temp!=null?` and ${last.temp} °C`:""}. Only the grinder moves.`,
+        variable:"grind",dir:up?"coarser":"finer",amt:step,target:Object.assign({},T,{clicks:t})};
+    }
+  }
+
+  const m=refineMove(last,(last.score==null?7:last.score)<=4);
+  if(!m)
+    return {state:"explore",rule:"log-taste",badge:"Nothing to read",head:"Log how that last brew tasted.",
+      body:`The brew on ${last.date} has no strength or extraction recorded, so there is nothing for me to go on. Open it, tap two buttons, and this card turns into a number.`,hold:"",target:T};
+  const n=l.length;
+  const best=l.slice().sort((a,b)=>(b.score||0)-(a.score||0))[0];
+  const pre=n<=2
+    ? `${n} brew${n>1?"s":""} of this bag on the ${lab}. Too early for patterns, so this is one change and nothing else.`
+    : `${n} brews of this bag on the ${lab}, best ${best.score} out of 10${best.clicks!=null?` at ${best.clicks} clicks`:""}.`;
+  return Object.assign({state:n<=2?"explore":"refine",badge:n<=2?"Exploring":"Refining"},m,{body:pre+" "+m.body});
+}
+
+/* ---------- coach card ---------- */
+function bagCtx(){
+  const bp=$("#fBeanPick").value,nb=allBeans().find(x=>x.id===bp);
+  let name=bp==="__new"?$("#fBean").value.trim():(nb?nb.name:"");
+  let roaster=bp==="__new"?readRoaster("f"):(nb?nb.roaster||"":"");
+  let rd=$("#fRoastDate").value||(nb?nb.roastDate||"":"");
+  let roast=bp==="__new"?$("#fRoast").value:(nb?nb.roast||"":"");
+  const lane=laneOf({device:$("#fDevice").value,recipe:fRecipe.value});
+  let key=bagKey({bean:name,roaster,roastDate:rd});
+  if(nb&&!bagBrews(key,lane).length&&rd===(nb.roastDate||"")){
+    const h=brewsFor(nb).map(normBrew).filter(b=>b.bean).sort((a,b)=>(b.created||0)-(a.created||0))[0];
+    if(h&&bagBrews(bagKey(h),lane).length){name=h.bean;roaster=h.roaster||"";roast=h.roast||roast;rd=h.roastDate||rd;key=bagKey(h)}
+  }
+  return {key,lane,name,roaster,roastDate:rd,roast,label:name+(roaster?", "+roaster:"")};
+}
+const pendKey=c=>"pend|"+c.key+"|"+c.lane;
+function setPend(c,v){if(v)lsSet(pendKey(c),v);else try{localStorage.removeItem(pendKey(c))}catch(e){}}
+let coachPush=false,coachNow=null,coachCtx=null;
+function renderCoach(){
+  const el=$("#coachCard");if(!el)return;
+  const c=coachCtx=bagCtx();
+  if(!c.name){el.hidden=true;coachNow=null;return}
+  let v=coach(c.key,c.lane,c.roastDate,c.roast);
+  if(coachPush&&v.done){
+    const l=bagBrews(c.key,c.lane),last=l[l.length-1];
+    const m=last&&refineMove(Object.assign({},last,{extraction:"",strength:"",bug:"",score:7}),false);
+    const amt=last?stepSize(last,false):2;
+    v=last&&last.clicks!=null
+      ? {state:"push",rule:"push",badge:"Pushing past dialled in",head:`Try ${last.clicks-amt} clicks, ${amt} finer.`,
+         body:`You asked. The settled cup is the one to come back to, so write ${last.clicks} down somewhere before you move. Going finer is the direction with more sweetness in it and more risk of bitterness.`,
+         hold:`Hold everything else at ${settingLine(last)}.`,variable:"grind",dir:"finer",amt,
+         target:{recipe:last.recipe,clicks:last.clicks-amt,dose:last.dose,water:last.water,temp:last.temp}}
+      : v;
+  }
+  coachNow=v;
+  const rr=ruleRecord(v.rule),p=lsGet(pendKey(c),null);
+  const t=v.target||{},lb=bagBrews(c.key,c.lane),prevB=lb[lb.length-1]||{};
+  const cell=(val,chg)=>val==null||val===""?"":`<span class="${chg?"chg":""}">${esc(val)}</span>`;
+  const rc=byId[t.recipe];
+  el.className="box panel coach"+(v.state==="blocked"?" blocked":v.done||v.state==="dialled"?" done":"");
+  el.hidden=false;
+  el.innerHTML=`
+    <div class="row between"><span class="eyebrow">Next brew${c.label?" · "+esc(c.label):""}</span><span class="tag ${v.state==="blocked"?"warn":"plain"}">${esc(v.badge)}</span></div>
+    <h2 class="chead">${esc(v.head)}</h2>
+    <p class="cbody">${esc(v.body)}</p>
+    ${v.hold?`<div class="mine">${esc(v.hold)}</div>`:""}
+    <div class="ctar">${rc&&t.recipe!==prevB.recipe?cell(recipeLabel(rc),true):""}${cell(t.clicks!=null?t.clicks+" clicks":"",t.clicks!==prevB.clicks)}${cell(t.dose!=null?t.dose+" g":"",t.dose!==prevB.dose)}${cell(t.water!=null?t.water+" g":"",t.water!==prevB.water)}${cell(t.temp!=null?t.temp+" °C":"",t.temp!==prevB.temp)}</div>
+    ${v.done||!v.variable?"":`<div style="margin-top:12px"><div class="muted" style="font-size:13px;margin-bottom:5px">Your call before you taste it</div>
+      <div class="opts" id="coachPred"><button type="button" class="opt" data-p="worse" aria-pressed="${p&&p.pred==="worse"}">Worse</button><button type="button" class="opt" data-p="same" aria-pressed="${p&&p.pred==="same"}">Same</button><button type="button" class="opt" data-p="better" aria-pressed="${p&&p.pred==="better"}">Better</button></div></div>`}
+    <div class="row" style="margin-top:8px"><button class="btn primary small" type="button" data-cuse>Set up this brew</button>${(v.done||v.state==="dialled")&&!coachPush?`<button class="btn small" type="button" data-cpush>Push it anyway</button>`:""}${coachPush?`<button class="btn small" type="button" data-cstop>Back to the settled cup</button>`:""}</div>
+    ${rr.n?`<div class="muted" style="font-size:12px;margin-top:8px">This suggestion has improved the next cup ${rr.hit} of ${rr.n} times.${rr.n>=6&&rr.hit/rr.n<0.5?" It is below half, so it has been retired and you are seeing the fallback.":""}</div>`:""}`;
+}
+$("#coachCard").addEventListener("click",e=>{
+  const c=coachCtx,v=coachNow;if(!c||!v)return;
+  const pr=e.target.closest("[data-p]"),use=e.target.closest("[data-cuse]"),pu=e.target.closest("[data-cpush]"),st=e.target.closest("[data-cstop]");
+  if(pu){coachPush=true;renderCoach();return}
+  if(st){coachPush=false;renderCoach();return}
+  if(pr){setPend(c,{rule:v.rule,variable:v.variable||"",dir:v.dir||"",amt:v.amt||0,pred:pr.dataset.p});renderCoach();return}
+  if(use){
+    const t=v.target||{},p=lsGet(pendKey(c),null);
+    setPend(c,{rule:v.rule,variable:v.variable||"",dir:v.dir||"",amt:v.amt||0,pred:(p&&p.pred)||""});
+    const keep=$("#fBeanPick").value,rd=$("#fRoastDate").value;
+    resetForm(false);
+    if(t.recipe&&byId[t.recipe]){$("#fDevice").value=byId[t.recipe].dev;fillRecipeOptions(byId[t.recipe].dev);fRecipe.value=t.recipe}
+    fillBeanPick(keep);if(rd)$("#fRoastDate").value=rd;
+    const set=(i,x)=>{if(x!=null&&x!=="")$(i).value=x};
+    set("#fClicks",t.clicks);set("#fDose",t.dose);set("#fWater",t.water);set("#fTemp",t.temp);
+    updateRatio();renderCoach();window.scrollTo(0,0);toast("Set up. Brew it, then come back and tap the taste.");
+  }
+});
+
+/* ---------- taste inputs ---------- */
+$("#fBug").innerHTML=BUGS.map(([v,l])=>`<button type="button" class="fchip" aria-pressed="false" data-v="${v}">${esc(l)}</button>`).join("");
+function getPick(id){const b=document.querySelector(`#${id} .fchip[aria-pressed="true"]`);return b?b.dataset.v:""}
+function setPick(id,v){document.querySelectorAll(`#${id} .fchip`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===v)))}
+$("#fBug").addEventListener("click",e=>{const b=e.target.closest(".fchip");if(!b)return;setPick("fBug",b.getAttribute("aria-pressed")==="true"?"":b.dataset.v);onTaste()});
+function formBrew(){
+  const num=i=>{const v=$(i).value;return v===""?null:+v};
+  const c=bagCtx();
+  return {date:$("#fDate").value,device:$("#fDevice").value,recipe:fRecipe.value,
+    bean:c.name,roaster:c.roaster,roast:c.roast,roastDate:c.roastDate,
+    clicks:num("#fClicks"),dose:num("#fDose"),water:num("#fWater"),temp:num("#fTemp"),time:parseTime($("#fTime").value),
+    strength:getOpt("fStrength"),extraction:getOpt("fExtraction"),bug:getPick("fBug"),vs:getOpt("fVs"),
+    score:+$("#fScore").value,mouth:getMouth(),flavours:getFlav()};
+}
 let autoNext="";
 function updateHint(){
-  const x=getOpt("fExtraction"),st=getOpt("fStrength"),h=$("#tasteHint"),t=hintText();
-  if(!x&&!st){h.hidden=true;return}
-  h.hidden=false;h.textContent=t?"Next time: "+t:(x==="balanced"&&st==="right"?"Dialled in. Keep these clicks and this ratio.":x==="balanced"?"Extraction is right. Keep the grind.":"Strength is right. Keep the ratio.");
+  const h=$("#tasteHint");if(!h)return;
+  const b=normBrew(formBrew());
+  if(!b.extraction&&!b.strength&&!b.bug){h.hidden=true;return}
+  const v=liveAdvice(b);
+  h.hidden=false;h.innerHTML=`<b>${esc(v.head)}</b> ${esc(v.body)}`;
 }
-function onTaste(){updateHint();const t=hintText(),n=$("#fNext");if(!n.value||n.value===autoNext){n.value=t;autoNext=t}}
-["fStrength","fExtraction"].forEach(id=>$("#"+id).addEventListener("click",e=>{const b=e.target.closest(".opt");if(!b)return;setOpt(id,b.getAttribute("aria-pressed")==="true"?"":b.dataset.v);onTaste()}));
+function onTaste(){updateHint();const v=liveAdvice(normBrew(formBrew())),n=$("#fNext");if(!n.value||n.value===autoNext){n.value=v.head||"";autoNext=n.value}}
+["fStrength","fExtraction","fVs"].forEach(id=>$("#"+id).addEventListener("click",e=>{const b=e.target.closest(".opt");if(!b)return;setOpt(id,b.getAttribute("aria-pressed")==="true"?"":b.dataset.v);onTaste()}));
+["#fDevice","#fRecipe","#fBeanPick","#fRoastDate","#fBean","#fRoast","#fClicks","#fDose","#fWater","#fTemp"].forEach(sel=>{const e=$(sel);if(e)e.addEventListener("change",()=>renderCoach())});
+
 function tasteOf(b){const t=b.taste||"";return {strength:b.strength||(t==="weak"||t==="strong"?t:""),extraction:b.extraction||(["sour","bitter","balanced"].includes(t)?t:"")}}
 const XL={sour:"Sour",balanced:"Balanced",bitter:"Bitter",dry:"Drying"},SL={weak:"Weak",right:"Right strength",strong:"Strong"};
 function tasteTags(b){const t=tasteOf(b);return [t.extraction&&XL[t.extraction],t.strength&&t.strength!=="right"&&SL[t.strength]].filter(Boolean)}
@@ -947,7 +1328,9 @@ function entryHtml(b,example){
       <div class="score">${b.score}<span class="muted" style="font-size:14px;font-weight:600">/10</span></div>
     </div>
     <div class="line">${esc(bits)}</div>
-    <div class="meta">Sweetness ${b.sweet}, acidity ${b.acid}, body ${b.body}</div>
+    ${b.sweet!=null||b.acid!=null||b.body!=null?`<div class="meta">Sweetness ${b.sweet??"–"}, acidity ${b.acid??"–"}, body ${b.body??"–"}</div>`:""}
+    ${b.bug&&b.bug!=="none"?`<div class="meta">Bugged you most: ${esc(((BUGS.find(x=>x[0]===b.bug)||["",""])[1]).toLowerCase())}</div>`:""}
+    ${b.vs?`<div class="meta">${({worse:"Worse",same:"About the same",better:"Better"})[b.vs]} than the brew before${b.advice&&b.advice.pred?`. You called it ${esc(b.advice.pred)}`:""}</div>`:""}
     ${(b.flavours&&b.flavours.length)||(b.mouth&&b.mouth.length)?`<div class="row" style="gap:4px">${(b.flavours||[]).map(f=>`<span class="tag plain">${dot(f)}${esc(f)}</span>`).join("")}${(b.mouth||[]).map(f=>`<span class="tag plain">${esc(f)}</span>`).join("")}</div>`:""}
     ${b.notes?`<div>${esc(b.notes)}</div>`:""}
     ${b.next?`<div class="mine">Next time: ${esc(b.next)}</div>`:""}
@@ -978,7 +1361,7 @@ function loadBrew(b,edit){
   if(edit){
     editingId=b.id;$("#formTitle").textContent="Edit brew";$("#saveBtn").textContent="Update brew";
     set("#fDate",b.date);{const t=tasteOf(b);setOpt("fStrength",t.strength);setOpt("fExtraction",t.extraction)}set("#fNotes",b.notes);set("#fNext",b.next);autoNext="";setFlav(b.flavours);setMouth(b.mouth);
-    ["sweet","acid","body","score"].forEach(k=>{const K={sweet:"Sweet",acid:"Acid",body:"Body",score:"Score"}[k];$("#f"+K).value=b[k];$("#v"+K).textContent=b[k]});
+    if(b.score!=null){$("#fScore").value=b.score;$("#vScore").textContent=b.score}setPick("fBug",b.bug||"");setOpt("fVs",b.vs||"");
     updateHint();
   }else if(b.next){$("#fNotes").placeholder="Last time: "+b.next}
   updateRatio();showTab("log");window.scrollTo(0,0);
@@ -1040,9 +1423,27 @@ function fillBeanPick(keep){
   if(wb&&wb.finished)opts=`<option value="${esc(wb.id)}">${esc(beanLabel(wb))} (finished)</option>`+opts;
   sel.innerHTML=opts+`<option value="__new">Add a new coffee</option>`;
   sel.value=[...sel.options].some(o=>o.value===want)?want:(act[0]?act[0].id:"__new");
-  $("#roasterList").innerHTML=[...new Set(all.map(b=>b.roaster).filter(Boolean))].map(r=>`<option value="${esc(r)}"></option>`).join("");
+  fillRoasters();
   onBeanPick();
 }
+function fillRoasters(){
+  const names=[...new Set(allBeans().map(b=>b.roaster).concat(brews.map(b=>b.roaster)).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  ["f","b"].forEach(p=>{
+    const el=$("#"+p+"RoasterPick");if(!el)return;
+    const want=el.value;
+    el.innerHTML=`<option value="">Not set</option>`+names.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join("")+`<option value="__new">Add a new roaster</option>`;
+    el.value=[...el.options].some(o=>o.value===want)?want:"";
+    syncRoaster(p);
+  });
+}
+function syncRoaster(p){const sel=$("#"+p+"RoasterPick"),w=$("#"+p+"RoasterNewWrap");if(sel&&w)w.hidden=sel.value!=="__new"}
+function setRoaster(p,v){
+  const sel=$("#"+p+"RoasterPick"),inp=$("#"+p+"Roaster");if(!sel)return;v=v||"";
+  if(v&&![...sel.options].some(o=>o.value===v))sel.insertAdjacentHTML("afterbegin",`<option value="${esc(v)}">${esc(v)}</option>`);
+  sel.value=v;if(inp)inp.value="";syncRoaster(p);
+}
+function readRoaster(p){const sel=$("#"+p+"RoasterPick");if(!sel)return "";return sel.value==="__new"?($("#"+p+"Roaster").value||"").trim():sel.value}
+["f","b"].forEach(p=>{const s=$("#"+p+"RoasterPick");if(s)s.addEventListener("change",()=>{syncRoaster(p);if(p==="f")renderCoach()})});
 let lastPickId=null;
 function onBeanPick(){
   const v=$("#fBeanPick").value;$("#newBean").hidden=v!=="__new";
@@ -1076,7 +1477,7 @@ async function resolveBeanForSave(){
   if(v==="__new"){
     const name=$("#fBean").value.trim();if(!name)return null;
     const bag=$("#fBag").value;
-    const nb={id:newId(),name,roaster:$("#fRoaster").value.trim(),roast:$("#fRoast").value,process:$("#fProcess").value,roastDate:$("#fRoastDate").value,bagWeight:bag===""?null:+bag,origin:"",variety:"",notes:"",finished:false,created:Date.now()};
+    const nb={id:newId(),name,roaster:readRoaster("f"),roast:$("#fRoast").value,process:$("#fProcess").value,roastDate:$("#fRoastDate").value,bagWeight:bag===""?null:+bag,origin:"",variety:"",notes:"",finished:false,created:Date.now()};
     await saveBean(nb);return nb;
   }
   const b=allBeans().find(x=>x.id===v);if(!b)return null;
@@ -1136,7 +1537,7 @@ function openBeanEditor(id,restock){
   $("#beanEdTitle").textContent=!b?"Add coffee":restock?`New bag of ${b.name}`:`Edit ${b.name}`;
   $("#beanSave").textContent=restock?"Start new bag":"Save coffee";
   const set=(i,v)=>$(i).value=v??"";
-  set("#bName",b&&b.name);set("#bRoaster",b&&b.roaster);set("#bOrigin",b&&b.origin);set("#bVariety",b&&b.variety);set("#bRoast",b&&b.roast);set("#bProcess",b&&b.process);
+  set("#bName",b&&b.name);fillRoasters();setRoaster("b",b&&b.roaster);set("#bOrigin",b&&b.origin);set("#bVariety",b&&b.variety);set("#bRoast",b&&b.roast);set("#bProcess",b&&b.process);
   set("#bRoastDate",restock?"":b&&b.roastDate);set("#bBag",b&&b.bagWeight);set("#bNotes",b&&b.notes);
   $("#beanEditor").hidden=false;setTimeout(()=>$(restock?"#bRoastDate":"#bName").focus(),0);
 }
@@ -1145,7 +1546,7 @@ $("#beanCancel").addEventListener("click",()=>{$("#beanEditor").hidden=true});
 $("#beanForm").addEventListener("submit",async e=>{
   e.preventDefault();
   const bag=$("#bBag").value;
-  const fields={name:$("#bName").value.trim(),roaster:$("#bRoaster").value.trim(),origin:$("#bOrigin").value.trim(),variety:$("#bVariety").value.trim(),
+  const fields={name:$("#bName").value.trim(),roaster:readRoaster("b"),origin:$("#bOrigin").value.trim(),variety:$("#bVariety").value.trim(),
     roast:$("#bRoast").value,process:$("#bProcess").value,roastDate:$("#bRoastDate").value,bagWeight:bag===""?null:+bag,notes:$("#bNotes").value.trim()};
   const obj=beanEditing?materialize(beanEditing,fields):Object.assign({id:newId(),finished:false,created:Date.now()},fields);
   if(beanRestock){obj.finished=false;obj.restockedAt=Date.now()}
