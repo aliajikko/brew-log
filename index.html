@@ -252,9 +252,7 @@ ol.steps li.active{border-radius:12px}
 :root[data-theme="dark"] .toast{background:rgba(242,243,240,.86);color:#1C1C1E}
 
 .scanbox{display:flex;flex-direction:column;gap:10px;background:var(--sunk);border-radius:16px;padding:12px}
-.scanbox label.btn{display:inline-flex;align-items:center}
-#scanPreview{max-height:160px;width:auto;align-self:flex-start;border-radius:12px;border:1px solid var(--edge)}
-#scanText,#scanKeyIn{width:100%;border:1px solid transparent;background:var(--glass-hi);border-radius:12px;padding:10px 12px;font:inherit;resize:vertical}
+#scanText{width:100%;border:1px solid transparent;background:var(--glass-hi);border-radius:12px;padding:10px 12px;font:inherit;resize:vertical}
 .f.filled input,.f.filled select{background:var(--switch-soft);box-shadow:0 0 0 1.5px var(--switch)}
 .f.unsure input,.f.unsure select{background:var(--press-soft);box-shadow:0 0 0 1.5px var(--press)}
 .f.unsure label::after{content:"  check this";color:var(--press)}
@@ -429,25 +427,14 @@ ol.steps li.active{border-radius:12px}
       <h3 id="beanEdTitle">Add coffee</h3>
       <form class="log" id="beanForm" autocomplete="off">
         <div class="scanbox wide" id="scanBox">
-          <div><b>Read the label</b><div class="muted small">Fills in what it can find. Check anything in colour, then save.</div></div>
-          <div class="row">
-            <label class="btn small primary" for="scanFile">Photo of the label</label>
-            <input type="file" id="scanFile" accept="image/*" hidden>
-            <button type="button" class="btn small" id="scanTextBtn">Paste label text</button>
-          </div>
-          <img id="scanPreview" alt="" hidden>
+          <div><b>Read the label</b><div class="muted small">Free, and works offline. Fills in what it can find. Check anything in colour, then save.</div></div>
+          <div class="row"><button type="button" class="btn small primary" id="scanTextBtn">Scan the label</button></div>
           <div class="wpanel" id="scanTextWrap" hidden>
-            <div class="muted small">On iPhone, tap in the box, choose Scan Text and point the camera at the label. You can also copy the text out of a photo with Live Text and paste it here. This way is free and works offline.</div>
-            <textarea id="scanText" rows="5" placeholder="Paste or scan the label text"></textarea>
+            <div class="muted small">Tap in the box, choose Scan Text and point the camera at the label. You can also copy the text out of a photo with Live Text and paste it here.</div>
+            <textarea id="scanText" rows="5" placeholder="Scan or paste the label text"></textarea>
             <div class="row"><button type="button" class="btn small primary" id="scanTextGo">Fill in</button></div>
           </div>
-          <div class="wpanel" id="scanKey" hidden>
-            <div class="small">Reading a photo sends it to Claude, Anthropic's AI, using your own API key. Make one at console.anthropic.com under API keys and paste it here. Each label costs about 2 US cents. The key stays on this phone.</div>
-            <input id="scanKeyIn" type="password" placeholder="sk-ant-..." autocomplete="off" autocapitalize="off" spellcheck="false">
-            <div class="row"><button type="button" class="btn small primary" id="scanKeySave">Save key and read the photo</button><button type="button" class="btn small" id="scanKeyCancel">Not now</button></div>
-          </div>
           <div class="hint" id="scanStatus" hidden></div>
-          <div class="muted small" id="scanKeyNote" hidden>Claude key saved on this phone. <button type="button" class="linkbtn" id="scanKeyForget">Forget it</button></div>
         </div>
         <div class="f"><label for="bName">Coffee name</label><input id="bName" required></div>
         <div class="f"><label for="bRoasterPick">Roaster</label><select id="bRoasterPick"></select></div>
@@ -1736,9 +1723,7 @@ const scanBox=f=>$(SCAN_FIELDS[f]).closest(".f");
 function scanStatus(msg){const el=$("#scanStatus");el.hidden=!msg;el.textContent=msg||""}
 function resetScan(){
   Object.keys(SCAN_FIELDS).forEach(f=>scanBox(f).classList.remove("filled","unsure"));
-  $("#scanPreview").hidden=true;$("#scanPreview").removeAttribute("src");$("#scanFile").value="";
-  $("#scanTextWrap").hidden=true;$("#scanText").value="";$("#scanKey").hidden=true;scanStatus("");
-  $("#scanKeyNote").hidden=!lsGet("claudeKey","");
+  $("#scanTextWrap").hidden=true;$("#scanText").value="";scanStatus("");
 }
 Object.keys(SCAN_FIELDS).forEach(f=>["input","change"].forEach(ev=>$(SCAN_FIELDS[f]).addEventListener(ev,()=>scanBox(f).classList.remove("filled","unsure"))));
 function matchRoaster(v){
@@ -1820,81 +1805,8 @@ function parseLabelText(text){
   if(d.origin)d.origin=tidy(d.origin);
   return {d,unsure};
 }
-$("#scanTextBtn").addEventListener("click",()=>{const w=$("#scanTextWrap");w.hidden=!w.hidden;$("#scanKey").hidden=true;if(!w.hidden)setTimeout(()=>$("#scanText").focus(),0)});
+$("#scanTextBtn").addEventListener("click",()=>{const w=$("#scanTextWrap");w.hidden=!w.hidden;if(!w.hidden)setTimeout(()=>$("#scanText").focus(),0)});
 $("#scanTextGo").addEventListener("click",()=>{const t=$("#scanText").value.trim();if(!t){scanStatus("Paste or scan the label text first.");return}const r=parseLabelText(t);applyLabel(r.d,r.unsure)});
-
-/* Photo path: Claude reads the label. */
-const SDK_URL="https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@1.3.0/+esm";
-const LABEL_SCHEMA={type:"object",additionalProperties:false,
-  required:["name","roaster","origin","variety","process","roast","roast_date","bag_grams","notes","unsure"],
-  properties:{name:{type:"string"},roaster:{type:"string"},origin:{type:"string"},variety:{type:"string"},
-    process:{type:"string",enum:[...PROCS,""]},roast:{type:"string",enum:[...ROASTS,""]},
-    roast_date:{type:"string"},bag_grams:{type:"integer"},notes:{type:"string"},
-    unsure:{type:"array",items:{type:"string",enum:Object.keys(SCAN_FIELDS)}}}};
-const LABEL_SYSTEM=`You read photos of specialty coffee bag labels for a home brewer's log. Read only what is printed on the label. When the label does not show a field, return an empty string, or 0 for bag_grams, rather than guessing.
-name: the coffee's own name as sold, such as the farm, lot or blend name. Not the roaster's name.
-roaster: the company that roasted it.
-origin: country first, then region if printed, for example "Colombia, Huila".
-variety: the coffee varieties, comma separated.
-process and roast: pick from the allowed values. Use Other for a process that is none of the named ones.
-roast_date: the date it was roasted, as YYYY-MM-DD. Not a best-before or packed date. If the year is missing, use the most recent such date that is not after today.
-notes: the tasting notes, comma separated.
-unsure: every field you filled but could not read clearly.`;
-let pendingPhoto=null;
-async function shrinkPhoto(file){
-  const url=URL.createObjectURL(file);
-  try{
-    const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no(new Error("decode"));i.src=url});
-    const k=Math.min(1,1568/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement("canvas");
-    c.width=Math.round(img.naturalWidth*k);c.height=Math.round(img.naturalHeight*k);
-    c.getContext("2d").drawImage(img,0,0,c.width,c.height);
-    return c.toDataURL("image/jpeg",.85);
-  }finally{URL.revokeObjectURL(url)}
-}
-async function readPhoto(dataUrl){
-  const key=lsGet("claudeKey","");if(!key){$("#scanKey").hidden=false;$("#scanTextWrap").hidden=true;scanStatus("");setTimeout(()=>$("#scanKeyIn").focus(),0);return}
-  scanStatus("Reading the label. This takes a few seconds.");
-  let Anthropic;
-  try{({default:Anthropic}=await import(SDK_URL))}catch(e){scanStatus("No connection, so the photo cannot be read right now. Paste label text works offline.");return}
-  const client=new Anthropic({apiKey:key,dangerouslyAllowBrowser:true});
-  try{
-    const res=await client.beta.messages.create({
-      model:"claude-opus-5-5",max_tokens:16000,
-      betas:["server-side-fallback-2026-07-01"],fallbacks:"default",
-      output_config:{effort:"low",format:{type:"json_schema",schema:LABEL_SCHEMA}},
-      system:LABEL_SYSTEM,
-      messages:[{role:"user",content:[
-        {type:"image",source:{type:"base64",media_type:"image/jpeg",data:dataUrl.split(",")[1]}},
-        {type:"text",text:`Today is ${today()}. Roasters already in my log: ${knownRoasters().join(", ")||"none yet"}. If the roaster on this label is one of them, use that exact spelling.`}]}]
-    });
-    if(res.stop_reason==="refusal"){scanStatus("Claude would not read this photo. Paste label text instead.");return}
-    const tb=res.content.find(b=>b.type==="text");
-    let d;try{d=JSON.parse(tb&&tb.text)}catch(e){scanStatus("The reply came back incomplete. Try the photo again.");return}
-    applyLabel(d,d.unsure||[]);
-  }catch(err){
-    const is=C=>!!C&&err instanceof C;
-    if(is(Anthropic.AuthenticationError)||is(Anthropic.PermissionDeniedError)){scanStatus("Anthropic did not accept the key. Tap Forget it below and paste the key again.");$("#scanKeyNote").hidden=false}
-    else if(is(Anthropic.RateLimitError))scanStatus("Too many reads in a row, or the account is out of credit. Wait a minute, or check the balance at console.anthropic.com.");
-    else if(is(Anthropic.APIConnectionError))scanStatus("No connection, so the photo cannot be read right now. Paste label text works offline.");
-    else if(is(Anthropic.APIError)){const why=String((err.error&&err.error.error&&err.error.error.message)||err.message||"").slice(0,160);scanStatus(`Anthropic returned an error${err.status?" ("+err.status+")":""}: ${why} Try again, or use Paste label text.`)}
-    else scanStatus("Something went wrong reading the photo. Try again.");
-  }
-}
-$("#scanFile").addEventListener("change",async e=>{
-  const f=e.target.files&&e.target.files[0];if(!f)return;
-  $("#scanTextWrap").hidden=true;
-  try{pendingPhoto=await shrinkPhoto(f)}catch(err){scanStatus("That photo could not be opened. Try another.");return}
-  const pv=$("#scanPreview");pv.src=pendingPhoto;pv.hidden=false;
-  readPhoto(pendingPhoto);
-});
-$("#scanKeySave").addEventListener("click",()=>{
-  const k=$("#scanKeyIn").value.trim();
-  if(!/^sk-ant-/.test(k)){scanStatus("That does not look like an Anthropic key. It starts with sk-ant-.");return}
-  lsSet("claudeKey",k);$("#scanKeyIn").value="";$("#scanKey").hidden=true;$("#scanKeyNote").hidden=false;
-  if(pendingPhoto)readPhoto(pendingPhoto);
-});
-$("#scanKeyCancel").addEventListener("click",()=>{$("#scanKey").hidden=true;$("#scanKeyIn").value="";scanStatus("Paste label text is free and needs no key.")});
-$("#scanKeyForget").addEventListener("click",()=>{try{localStorage.removeItem("claudeKey")}catch(e){}$("#scanKeyNote").hidden=true;toast("Key removed from this phone")});
 $("#beanCancel").addEventListener("click",()=>{$("#beanEditor").hidden=true});
 $("#beanForm").addEventListener("submit",async e=>{
   e.preventDefault();
@@ -2008,6 +1920,7 @@ $("#restoreFile").addEventListener("change",async e=>{
 });
 
 /* ---------- boot ---------- */
+try{localStorage.removeItem("claudeKey")}catch(e){}
 migrateRoasters();
 const splitCount=migrateBeanIds();
 pick.value=cur.id;renderBrew();resetForm(true);renderAll();
