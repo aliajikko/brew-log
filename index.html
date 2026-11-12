@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#EDEFEA" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#121411" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F3F3EE" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#23272B" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -15,29 +15,35 @@
 <link rel="manifest" href="manifest.webmanifest">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}img{max-width:100%}html{-webkit-text-size-adjust:100%}</style>
 <title>Press and Switch Log</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
 :root{
-  --bg:#EDEFEA; --surface:#FAFBF8; --sunk:#E3E6DF; --ink:#1D1F1B; --muted:#5F635B; --line:#D3D8CE;
-  --press:#94650F; --press-soft:#F1E6CF; --switch:#2C6654; --switch-soft:#D8E8E1;
-  --good:#2C6654; --warn:#A13A28; --on-accent:#FFFFFF;
-  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
-  --sans:"IBM Plex Sans",ui-sans-serif,system-ui,-apple-system,sans-serif;
-  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --bg:#F3F3EE; --surface:rgba(255,255,255,.72); --sunk:rgba(118,118,128,.10); --ink:#1C1C1E; --muted:#6B6E68; --line:rgba(60,60,67,.13);
+  --press:#A8701A; --press-soft:rgba(214,150,40,.16); --switch:#2A7560; --switch-soft:rgba(42,117,96,.13);
+  --good:#2A7560; --warn:#C0392B; --on-accent:#FFFFFF;
+  --glass:rgba(255,255,255,.56); --glass-hi:rgba(255,255,255,.86); --edge:rgba(255,255,255,.85);
+  --shade:inset 0 1px 0 rgba(255,255,255,.9),0 12px 32px -14px rgba(40,50,40,.22);
+  --wash:radial-gradient(55% 40% at 8% 6%,rgba(236,180,98,.42),transparent 70%),radial-gradient(50% 38% at 96% 20%,rgba(118,196,168,.40),transparent 70%),radial-gradient(60% 45% at 30% 62%,rgba(255,214,190,.30),transparent 70%),radial-gradient(70% 50% at 70% 100%,rgba(160,186,236,.36),transparent 70%),linear-gradient(180deg,#F8F7F2,#EDF0EB);
+  --display:-apple-system,"SF Pro Display",BlinkMacSystemFont,system-ui,"Segoe UI",Roboto,sans-serif;
+  --sans:-apple-system,"SF Pro Text",BlinkMacSystemFont,system-ui,"Segoe UI",Roboto,sans-serif;
+  --mono:-apple-system,"SF Pro Text",BlinkMacSystemFont,system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#121411; --surface:#1B1E1A; --sunk:#171916; --ink:#E7EAE3; --muted:#9DA398; --line:#2F342D;
-    --press:#DDA94C; --press-soft:#2E2718; --switch:#72B89F; --switch-soft:#1B2E27;
-    --good:#72B89F; --warn:#E4826F; --on-accent:#121411;
+    --bg:#23272B; --surface:rgba(255,255,255,.10); --sunk:rgba(255,255,255,.08); --ink:#F2F3F0; --muted:#A6ABA3; --line:rgba(255,255,255,.12);
+    --press:#E6B35C; --press-soft:rgba(230,179,92,.17); --switch:#80C6AC; --switch-soft:rgba(128,198,172,.16);
+    --good:#80C6AC; --warn:#F09380; --on-accent:#1C1C1E;
+    --glass:rgba(255,255,255,.09); --glass-hi:rgba(255,255,255,.20); --edge:rgba(255,255,255,.16);
+    --shade:inset 0 1px 0 rgba(255,255,255,.14),0 14px 34px -16px rgba(0,0,0,.55);
+    --wash:radial-gradient(55% 40% at 8% 6%,rgba(214,150,60,.30),transparent 70%),radial-gradient(50% 38% at 96% 20%,rgba(80,170,140,.28),transparent 70%),radial-gradient(70% 50% at 70% 100%,rgba(100,130,200,.28),transparent 70%),linear-gradient(180deg,#2A2E33,#202327);
   }
 }
 :root[data-theme="dark"]{
-  --bg:#121411; --surface:#1B1E1A; --sunk:#171916; --ink:#E7EAE3; --muted:#9DA398; --line:#2F342D;
-  --press:#DDA94C; --press-soft:#2E2718; --switch:#72B89F; --switch-soft:#1B2E27;
-  --good:#72B89F; --warn:#E4826F; --on-accent:#121411;
+  --bg:#23272B; --surface:rgba(255,255,255,.10); --sunk:rgba(255,255,255,.08); --ink:#F2F3F0; --muted:#A6ABA3; --line:rgba(255,255,255,.12);
+  --press:#E6B35C; --press-soft:rgba(230,179,92,.17); --switch:#80C6AC; --switch-soft:rgba(128,198,172,.16);
+  --good:#80C6AC; --warn:#F09380; --on-accent:#1C1C1E;
+  --glass:rgba(255,255,255,.09); --glass-hi:rgba(255,255,255,.20); --edge:rgba(255,255,255,.16);
+  --shade:inset 0 1px 0 rgba(255,255,255,.14),0 14px 34px -16px rgba(0,0,0,.55);
+  --wash:radial-gradient(55% 40% at 8% 6%,rgba(214,150,60,.30),transparent 70%),radial-gradient(50% 38% at 96% 20%,rgba(80,170,140,.28),transparent 70%),radial-gradient(70% 50% at 70% 100%,rgba(100,130,200,.28),transparent 70%),linear-gradient(180deg,#2A2E33,#202327);
 }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans);margin:0}
@@ -192,6 +198,66 @@ ol.plain{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
 .session{font-size:13px;border-top:1px dashed var(--line);padding-top:6px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;font-weight:600;font-size:14px;z-index:20}
 @media (prefers-reduced-motion:no-preference){.now{transition:background .25s}}
+/* ---------- glass ---------- */
+body{background:var(--bg);font-size:15.5px;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;letter-spacing:-.005em}
+body::before{content:"";position:fixed;inset:-8%;z-index:-1;pointer-events:none;background:var(--wash)}
+.wrap{padding-block:18px calc(118px + env(safe-area-inset-bottom,0px))}
+h1{font-size:32px;font-weight:800;letter-spacing:-.03em}
+h2{font-weight:700;letter-spacing:-.02em}
+h3{font-weight:650;letter-spacing:-.015em}
+.chead{font-weight:700;letter-spacing:-.02em}
+.eyebrow{letter-spacing:.06em}
+
+.box,.recipe,.entry,.bean{background:var(--glass);border:1px solid var(--edge);box-shadow:var(--shade);border-radius:24px}
+.box{-webkit-backdrop-filter:saturate(180%) blur(24px);backdrop-filter:saturate(180%) blur(24px)}
+.box.coach{border-left:1px solid var(--edge);box-shadow:inset 4px 0 0 var(--press),var(--shade)}
+.box.coach.blocked{box-shadow:inset 4px 0 0 var(--warn),var(--shade)}
+.box.coach.done{box-shadow:inset 4px 0 0 var(--good),var(--shade)}
+
+.stats{gap:0;background:var(--glass-hi);border:1px solid var(--edge);border-radius:20px;box-shadow:var(--shade)}
+.stat{background:transparent;padding:10px 12px;box-shadow:0 0 0 .5px var(--line)}
+@media (max-width:460px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stat .v{font-size:17px;font-weight:600;letter-spacing:-.01em}
+.stat .k{letter-spacing:.04em;font-weight:500}
+
+nav.tabs{position:fixed;top:auto;left:50%;bottom:calc(12px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(calc(100% - 24px),500px);margin:0;padding:0;background:transparent;z-index:10}
+.seg{background:var(--glass);border:1px solid var(--edge);border-radius:999px;padding:5px;gap:2px;box-shadow:var(--shade),0 18px 40px -18px rgba(0,0,0,.35);-webkit-backdrop-filter:saturate(200%) blur(28px);backdrop-filter:saturate(200%) blur(28px)}
+.seg button{border-radius:999px;padding:11px 2px;font-size:13px;font-weight:600}
+.seg button[aria-selected="true"]{background:var(--glass-hi);color:var(--ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 2px 8px rgba(0,0,0,.10)}
+
+.btn{border-radius:999px;background:var(--glass-hi);border:1px solid var(--edge);box-shadow:0 1px 2px rgba(0,0,0,.05);padding:10px 16px}
+.btn.small{padding:7px 13px}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:transparent;box-shadow:0 6px 16px -8px rgba(0,0,0,.45)}
+.chip,.fchip{background:var(--glass-hi);border:1px solid var(--edge)}
+.chip[aria-pressed="true"],.fchip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:transparent}
+.tag{border-radius:999px;padding:3px 9px;letter-spacing:.03em}
+.rest{border-radius:999px;padding:3px 9px}
+
+.f input,.f select,.f textarea,#brewDose{background:var(--sunk);border:1px solid transparent;border-radius:13px;padding:11px 13px}
+.f input:focus,.f select:focus,.f textarea:focus,#brewDose:focus{outline:none;border-color:var(--edge);background:var(--glass-hi);box-shadow:0 0 0 3px var(--switch-soft)}
+.f input[type=range]{background:transparent;border:0;padding:0;box-shadow:none}
+.opts{background:var(--sunk);border:0;border-radius:13px;padding:3px}
+.opt{border-radius:10px}
+.opt[aria-pressed="true"]{background:var(--glass-hi);box-shadow:0 2px 8px rgba(0,0,0,.10)}
+.sub,.wpanel{background:var(--sunk);border-radius:16px}
+.mine,.hint,.now{border-radius:14px}
+ol.steps li.active{border-radius:12px}
+.ctar span{border-radius:8px}
+.bar{height:7px;border-radius:999px}
+.bar i{border-radius:999px}
+.clock{font-weight:200;letter-spacing:-.04em}
+
+.toast{bottom:calc(86px + env(safe-area-inset-bottom,0px));border-radius:999px;padding:10px 18px;background:rgba(28,28,30,.78);color:#fff;-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:0 10px 30px -10px rgba(0,0,0,.4)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .toast{background:rgba(242,243,240,.86);color:#1C1C1E}}
+:root[data-theme="dark"] .toast{background:rgba(242,243,240,.86);color:#1C1C1E}
+
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .box,.seg{background:var(--glass-hi)}
+}
+@media (prefers-reduced-transparency: reduce){
+  body::before{display:none}
+  .box,.recipe,.entry,.bean,.seg{background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none}
+}
 </style>
 </head>
 <body>
@@ -220,6 +286,7 @@ ol.plain{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
       <div class="f">
         <label for="brewPick">Recipe</label>
         <select id="brewPick"></select>
+        <div class="beaninfo" id="brewName"></div>
       </div>
       <div id="brewStats"></div>
       <div class="row between">
@@ -779,6 +846,7 @@ $("#doseReset").addEventListener("click",()=>setScale(cur.dose));
 pick.addEventListener("change",()=>pickBrew(pick.value));
 
 function renderBrew(){
+  $("#brewName").innerHTML=`<span><b>${esc(cur.author)}</b>, ${esc(cur.name)}</span>`;
   $("#brewStats").innerHTML = stats([["Coffee",sDose()+" g"],["Water",sWater()+" g"],["Ratio",ratio(sDose(),sWater())],["Temp",cur.temp],["C5 est.",cur.c5]]);
   $("#brewDose").value=sDose();
   $("#doseReset").hidden=scale===1;
@@ -850,7 +918,7 @@ $("#recipeInfo").addEventListener("click",e=>{
   [["#devFilter","all"],["#kindFilter","all"]].forEach(([sel,v])=>$(sel).querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed",String(c.dataset.v===v))));
   renderRecipes();showTab("recipes");
   const card=document.getElementById("r-"+b.dataset.openrecipe);
-  if(card){const d=card.querySelector("details");if(d)d.open=true;card.scrollIntoView({block:"start"});setTimeout(()=>window.scrollBy(0,-80),0)}
+  if(card){const d=card.querySelector("details");if(d)d.open=true;card.scrollIntoView({block:"start"});setTimeout(()=>window.scrollBy(0,-14),0)}
   else window.scrollTo(0,0);
 });
 function today(){const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
