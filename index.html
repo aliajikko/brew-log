@@ -252,7 +252,8 @@ ol.steps li.active{border-radius:12px}
 :root[data-theme="dark"] .toast{background:rgba(242,243,240,.86);color:#1C1C1E}
 
 .scanbox{display:flex;flex-direction:column;gap:10px;background:var(--sunk);border-radius:16px;padding:12px}
-#scanText{width:100%;border:1px solid transparent;background:var(--glass-hi);border-radius:12px;padding:10px 12px;font:inherit;resize:vertical}
+.scanbox label.btn{display:inline-flex;align-items:center}
+#scanPreview{max-height:160px;width:auto;align-self:flex-start;border-radius:12px;border:1px solid var(--edge)}
 .f.filled input,.f.filled select{background:var(--switch-soft);box-shadow:0 0 0 1.5px var(--switch)}
 .f.unsure input,.f.unsure select{background:var(--press-soft);box-shadow:0 0 0 1.5px var(--press)}
 .f.unsure label::after{content:"  check this";color:var(--press)}
@@ -427,18 +428,9 @@ ol.steps li.active{border-radius:12px}
       <h3 id="beanEdTitle">Add coffee</h3>
       <form class="log" id="beanForm" autocomplete="off">
         <div class="scanbox wide" id="scanBox">
-          <div><b>Read the label with your camera</b><div class="muted small">Optional, free, no photo is saved. Or skip it and type below.</div></div>
-          <div class="row"><button type="button" class="btn small primary" id="scanTextBtn">Scan the label</button></div>
-          <div class="wpanel" id="scanTextWrap" hidden>
-            <ol class="plain small">
-              <li>Tap inside the box below, then tap it once more. A small menu pops up.</li>
-              <li>Tap <b>Scan Text</b>. The camera opens inside the keyboard.</li>
-              <li>Point it at the label until the words show, then tap <b>Insert</b>.</li>
-              <li>Tap <b>Fill in</b>. Check anything in colour, then save.</li>
-            </ol>
-            <textarea id="scanText" rows="5" placeholder="The label's words land here"></textarea>
-            <div class="row"><button type="button" class="btn small primary" id="scanTextGo">Fill in</button></div>
-          </div>
+          <div><b>Read the label</b><div class="muted small">Take a photo of the bag and it fills in what it can read. It all happens on your phone, free, and nothing is sent anywhere. Or skip it and type below.</div></div>
+          <div class="row"><label class="btn small primary" for="scanFile">Photo of the label</label><input type="file" id="scanFile" accept="image/*" hidden></div>
+          <img id="scanPreview" alt="" hidden>
           <div class="hint" id="scanStatus" hidden></div>
         </div>
         <div class="f"><label for="bName">Coffee name</label><input id="bName" required></div>
@@ -1728,7 +1720,7 @@ const scanBox=f=>$(SCAN_FIELDS[f]).closest(".f");
 function scanStatus(msg){const el=$("#scanStatus");el.hidden=!msg;el.textContent=msg||""}
 function resetScan(){
   Object.keys(SCAN_FIELDS).forEach(f=>scanBox(f).classList.remove("filled","unsure"));
-  $("#scanTextWrap").hidden=true;$("#scanText").value="";scanStatus("");
+  $("#scanPreview").hidden=true;$("#scanPreview").removeAttribute("src");$("#scanFile").value="";scanStatus("");
 }
 Object.keys(SCAN_FIELDS).forEach(f=>["input","change"].forEach(ev=>$(SCAN_FIELDS[f]).addEventListener(ev,()=>scanBox(f).classList.remove("filled","unsure"))));
 function matchRoaster(v){
@@ -1752,10 +1744,10 @@ function applyLabel(d,unsure){
     if((unsure||[]).includes(f))box.classList.add("unsure");
   });
   const n=got.length,u=got.filter(f=>(unsure||[]).includes(f)).length;
-  scanStatus(!n?"Could not find anything to fill in. Try a sharper photo, closer to the label.":`Filled in ${n} ${n>1?"fields":"field"}${u?`, ${u} to check`:""}. Anything wrong, just change it before you save.`);
+  scanStatus(!n?"Could not read enough to fill anything in. Try again closer, straight on, in good light, with the label filling the photo.":`Filled in ${n} ${n>1?"fields":"field"}${u?`, ${u} to check`:""}. Anything wrong, just change it before you save.`);
 }
 
-/* Free path: text from Live Text, read with simple rules. */
+/* Turns the text read off a label into form fields, with simple rules. */
 const ORIGINS=["Ethiopia","Kenya","Colombia","Brazil","Guatemala","Honduras","Costa Rica","Panama","El Salvador","Nicaragua","Mexico","Peru","Bolivia","Ecuador","Rwanda","Burundi","Uganda","Tanzania","Congo","DRC","Yemen","Indonesia","Sumatra","Java","Sulawesi","Papua New Guinea","India","Myanmar","Thailand","Vietnam","China","Yunnan","Taiwan","Laos","Timor","Jamaica","Hawaii","Kona","Dominican Republic","Haiti","Cuba","Puerto Rico","Malawi","Zambia","Zimbabwe","Cameroon","Australia","Philippines","Nepal"];
 const VARIETIES=["Pink Bourbon","Red Bourbon","Yellow Bourbon","Bourbon","Gesha","Geisha","Caturra","Catuai","Castillo","Typica","SL28","SL34","Pacamara","Maragogipe","Ethiopian Heirloom","Heirloom","74110","74112","74158","Sidra","Mundo Novo","Catimor","Sarchimor","Parainema","Wush Wush","Chiroso","Laurina","Eugenioides","Tabi","Rume Sudan","Mokka","Batian","Ruiru 11","Obata","Villa Sarchi","Pacas","Marsellesa","Lempira","Cenicafe 1"];
 const MONTHS=["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
@@ -1795,7 +1787,12 @@ function parseLabelText(text){
   const vs=[];VARIETIES.forEach(v=>{if(new RegExp("\\b"+v+"\\b","i").test(all)&&!vs.some(x=>x.toLowerCase().includes(v.toLowerCase())))vs.push(v)});
   if(vs.length){d.variety=vs.join(", ");take(new RegExp("\\b"+vs[0]+"\\b","i"))}
   const ni=lines.findIndex(l=>/^(tasting notes|notes|flavou?r(s| notes)?|cup(ping)? (notes|profile)|we taste|tastes? (of|like))\b/i.test(l));
-  if(ni>=0){const rest=lines[ni].replace(/^[^:]*:?\s*/,"").trim();d.notes=rest||lines[ni+1]||"";used.add(ni);if(!rest)used.add(ni+1)}
+  if(ni>=0){
+    const rest=lines[ni].replace(/^[^:]*:?\s*/,"").trim();let j=rest?ni:ni+1,txt=rest||lines[j]||"";used.add(ni);used.add(j);
+    /* notes that wrap onto the next line end in a comma or "and" */
+    while(/(,|\band)\s*$/i.test(txt)&&lines[j+1]&&!/\d/.test(lines[j+1])){j++;txt+=" "+lines[j];used.add(j)}
+    d.notes=txt.replace(/[\s,;.]+$/,"").replace(/\s+,/g,",");
+  }
   if(!d.notes){
     const fl=lines.findIndex((l,i)=>!used.has(i)&&!/\d/.test(l)&&l.split(/\s*[,·•|\/]\s*|\s{2,}|\s+and\s+/).filter(Boolean).length>=3&&l===l.toLowerCase());
     if(fl>=0){d.notes=lines[fl].split(/\s*[,·•|\/]\s*|\s{2,}|\s+and\s+/).filter(Boolean).join(", ");used.add(fl)}
@@ -1810,8 +1807,52 @@ function parseLabelText(text){
   if(d.origin)d.origin=tidy(d.origin);
   return {d,unsure};
 }
-$("#scanTextBtn").addEventListener("click",()=>{const w=$("#scanTextWrap");w.hidden=!w.hidden;if(!w.hidden)setTimeout(()=>$("#scanText").focus(),0)});
-$("#scanTextGo").addEventListener("click",()=>{const t=$("#scanText").value.trim();if(!t){scanStatus("Paste or scan the label text first.");return}const r=parseLabelText(t);applyLabel(r.d,r.unsure)});
+/* The photo is read on the phone by Tesseract, a free open source reader. The first use downloads
+   it (about 4 MB), after that it is kept on the phone. */
+const OCR_URL="https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.esm.min.js";
+let ocrWorker=null,ocrBusy=false;
+async function getOcr(){
+  if(ocrWorker)return ocrWorker;
+  const T=await import(OCR_URL);
+  const create=T.createWorker||(T.default&&T.default.createWorker);
+  ocrWorker=await create("eng",1,{logger:m=>{
+    if(m.status==="recognizing text")scanStatus(`Reading the label, ${Math.round((m.progress||0)*100)}%`);
+    else if(/loading|initiali/.test(m.status||""))scanStatus("Getting the reader ready. The first time takes a little longer.");
+  }});
+  return ocrWorker;
+}
+function preparePhoto(file){
+  return new Promise((ok,no)=>{
+    const url=URL.createObjectURL(file),img=new Image();
+    img.onload=()=>{
+      const k=Math.min(1,2000/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement("canvas");
+      c.width=Math.round(img.naturalWidth*k);c.height=Math.round(img.naturalHeight*k);
+      const g=c.getContext("2d");g.drawImage(img,0,0,c.width,c.height);
+      /* grey and stretch the contrast, which helps the reader with glossy bags */
+      const px=g.getImageData(0,0,c.width,c.height),d=px.data;let lo=255,hi=0;
+      for(let i=0;i<d.length;i+=4){const y=(d[i]*.299+d[i+1]*.587+d[i+2]*.114)|0;d[i]=y;if(y<lo)lo=y;if(y>hi)hi=y}
+      const span=Math.max(1,hi-lo);
+      for(let i=0;i<d.length;i+=4){const v=Math.round((d[i]-lo)*255/span);d[i]=d[i+1]=d[i+2]=v}
+      g.putImageData(px,0,0);URL.revokeObjectURL(url);ok(c);
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);no(new Error("decode"))};
+    img.src=url;
+  });
+}
+$("#scanFile").addEventListener("change",async e=>{
+  const f=e.target.files&&e.target.files[0];if(!f||ocrBusy)return;
+  ocrBusy=true;
+  try{
+    const pv=$("#scanPreview");pv.src=URL.createObjectURL(f);pv.hidden=false;
+    let canvas;try{canvas=await preparePhoto(f)}catch(err){scanStatus("That photo could not be opened. Try another.");return}
+    scanStatus("Getting the reader ready. The first time takes a little longer.");
+    let w;try{w=await getOcr()}catch(err){scanStatus("The reader could not be downloaded. It needs the internet the first time only. Try again on wifi.");return}
+    const {data}=await w.recognize(canvas);
+    const r=parseLabelText((data&&data.text)||"");
+    applyLabel(r.d,r.unsure);
+  }catch(err){scanStatus("Something went wrong reading the photo. Try again, closer and straight on.")}
+  finally{ocrBusy=false;$("#scanFile").value=""}
+});
 $("#beanCancel").addEventListener("click",()=>{$("#beanEditor").hidden=true});
 $("#beanForm").addEventListener("submit",async e=>{
   e.preventDefault();
