@@ -251,6 +251,13 @@ ol.steps li.active{border-radius:12px}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .toast{background:rgba(242,243,240,.86);color:#1C1C1E}}
 :root[data-theme="dark"] .toast{background:rgba(242,243,240,.86);color:#1C1C1E}
 
+.scanbox{display:flex;flex-direction:column;gap:10px;background:var(--sunk);border-radius:16px;padding:12px}
+.scanbox label.btn{display:inline-flex;align-items:center}
+#scanPreview{max-height:160px;width:auto;align-self:flex-start;border-radius:12px;border:1px solid var(--edge)}
+#scanText,#scanKeyIn{width:100%;border:1px solid transparent;background:var(--glass-hi);border-radius:12px;padding:10px 12px;font:inherit;resize:vertical}
+.f.filled input,.f.filled select{background:var(--switch-soft);box-shadow:0 0 0 1.5px var(--switch)}
+.f.unsure input,.f.unsure select{background:var(--press-soft);box-shadow:0 0 0 1.5px var(--press)}
+.f.unsure label::after{content:"  check this";color:var(--press)}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
   .box,.seg{background:var(--glass-hi)}
 }
@@ -421,6 +428,27 @@ ol.steps li.active{border-radius:12px}
     <div class="box panel" id="beanEditor" hidden>
       <h3 id="beanEdTitle">Add coffee</h3>
       <form class="log" id="beanForm" autocomplete="off">
+        <div class="scanbox wide" id="scanBox">
+          <div><b>Read the label</b><div class="muted small">Fills in what it can find. Check anything in colour, then save.</div></div>
+          <div class="row">
+            <label class="btn small primary" for="scanFile">Photo of the label</label>
+            <input type="file" id="scanFile" accept="image/*" hidden>
+            <button type="button" class="btn small" id="scanTextBtn">Paste label text</button>
+          </div>
+          <img id="scanPreview" alt="" hidden>
+          <div class="wpanel" id="scanTextWrap" hidden>
+            <div class="muted small">On iPhone, tap in the box, choose Scan Text and point the camera at the label. You can also copy the text out of a photo with Live Text and paste it here. This way is free and works offline.</div>
+            <textarea id="scanText" rows="5" placeholder="Paste or scan the label text"></textarea>
+            <div class="row"><button type="button" class="btn small primary" id="scanTextGo">Fill in</button></div>
+          </div>
+          <div class="wpanel" id="scanKey" hidden>
+            <div class="small">Reading a photo sends it to Claude, Anthropic's AI, using your own API key. Make one at console.anthropic.com under API keys and paste it here. Each label costs about 2 US cents. The key stays on this phone.</div>
+            <input id="scanKeyIn" type="password" placeholder="sk-ant-..." autocomplete="off" autocapitalize="off" spellcheck="false">
+            <div class="row"><button type="button" class="btn small primary" id="scanKeySave">Save key and read the photo</button><button type="button" class="btn small" id="scanKeyCancel">Not now</button></div>
+          </div>
+          <div class="hint" id="scanStatus" hidden></div>
+          <div class="muted small" id="scanKeyNote" hidden>Claude key saved on this phone. <button type="button" class="linkbtn" id="scanKeyForget">Forget it</button></div>
+        </div>
         <div class="f"><label for="bName">Coffee name</label><input id="bName" required></div>
         <div class="f"><label for="bRoasterPick">Roaster</label><select id="bRoasterPick"></select></div>
         <div class="f" id="bRoasterNewWrap" hidden><label for="bRoaster">New roaster name</label><input id="bRoaster" placeholder="Meraki"></div>
@@ -1562,8 +1590,9 @@ function fillBeanPick(keep){
   fillRoasters();
   onBeanPick();
 }
+function knownRoasters(){return [...new Set(allBeans().map(b=>b.roaster).concat(brews.map(b=>b.roaster)).filter(Boolean))].sort((a,b)=>a.localeCompare(b))}
 function fillRoasters(){
-  const names=[...new Set(allBeans().map(b=>b.roaster).concat(brews.map(b=>b.roaster)).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const names=knownRoasters();
   ["f","b"].forEach(p=>{
     const el=$("#"+p+"RoasterPick");if(!el)return;
     const want=el.value;
@@ -1695,9 +1724,177 @@ function openBeanEditor(id,restock){
   const set=(i,v)=>$(i).value=v??"";
   set("#bName",b&&b.name);fillRoasters();setRoaster("b",b&&b.roaster);set("#bOrigin",b&&b.origin);set("#bVariety",b&&b.variety);set("#bRoast",b&&b.roast);set("#bProcess",b&&b.process);
   set("#bRoastDate",restock?"":b&&b.roastDate);set("#bBag",b&&b.bagWeight);set("#bNotes",b&&b.notes);
+  resetScan();
   $("#beanEditor").hidden=false;setTimeout(()=>$(restock?"#bRoastDate":"#bName").focus(),0);
 }
 $("#addBeanBtn").addEventListener("click",()=>openBeanEditor(null));
+
+/* ---------- label reading ---------- */
+const SCAN_FIELDS={name:"#bName",roaster:"#bRoasterPick",origin:"#bOrigin",variety:"#bVariety",roast:"#bRoast",process:"#bProcess",roast_date:"#bRoastDate",bag_grams:"#bBag",notes:"#bNotes"};
+const ROASTS=["Light","Medium light","Medium","Medium dark","Dark"],PROCS=["Washed","Natural","Honey","Anaerobic","Other"];
+const scanBox=f=>$(SCAN_FIELDS[f]).closest(".f");
+function scanStatus(msg){const el=$("#scanStatus");el.hidden=!msg;el.textContent=msg||""}
+function resetScan(){
+  Object.keys(SCAN_FIELDS).forEach(f=>scanBox(f).classList.remove("filled","unsure"));
+  $("#scanPreview").hidden=true;$("#scanPreview").removeAttribute("src");$("#scanFile").value="";
+  $("#scanTextWrap").hidden=true;$("#scanText").value="";$("#scanKey").hidden=true;scanStatus("");
+  $("#scanKeyNote").hidden=!lsGet("claudeKey","");
+}
+Object.keys(SCAN_FIELDS).forEach(f=>["input","change"].forEach(ev=>$(SCAN_FIELDS[f]).addEventListener(ev,()=>scanBox(f).classList.remove("filled","unsure"))));
+function matchRoaster(v){
+  const k=String(v||"").trim().toLowerCase();if(!k)return "";
+  const known=knownRoasters();
+  return known.find(r=>r.toLowerCase()===k)||known.find(r=>{const r2=r.toLowerCase();return r2.startsWith(k)||k.startsWith(r2)})||String(v).trim();
+}
+function pickOpt(list,v){const k=String(v||"").trim().toLowerCase();return list.find(o=>o.toLowerCase()===k)||""}
+function applyLabel(d,unsure){
+  const set={
+    name:v=>{$("#bName").value=v},roaster:v=>setRoaster("b",matchRoaster(v)),origin:v=>{$("#bOrigin").value=v},variety:v=>{$("#bVariety").value=v},
+    roast:v=>{const o=pickOpt(ROASTS,v);if(o)$("#bRoast").value=o;return !!o},process:v=>{const o=pickOpt(PROCS,v);if(o)$("#bProcess").value=o;return !!o},
+    roast_date:v=>{if(/^\d{4}-\d{2}-\d{2}$/.test(v)){$("#bRoastDate").value=v;return true}return false},
+    bag_grams:v=>{if(+v>0){$("#bBag").value=Math.round(+v);return true}return false},notes:v=>{$("#bNotes").value=v}
+  };
+  const got=[];
+  Object.keys(SCAN_FIELDS).forEach(f=>{
+    const v=d[f];if(v==null||v===""||v===0)return;
+    if(set[f](typeof v==="string"?v.trim():v)===false)return;
+    got.push(f);const box=scanBox(f);box.classList.add("filled");
+    if((unsure||[]).includes(f))box.classList.add("unsure");
+  });
+  const n=got.length,u=got.filter(f=>(unsure||[]).includes(f)).length;
+  scanStatus(!n?"Could not find anything to fill in. Try a sharper photo, closer to the label.":`Filled in ${n} ${n>1?"fields":"field"}${u?`, ${u} to check`:""}. Anything wrong, just change it before you save.`);
+}
+
+/* Free path: text from Live Text, read with simple rules. */
+const ORIGINS=["Ethiopia","Kenya","Colombia","Brazil","Guatemala","Honduras","Costa Rica","Panama","El Salvador","Nicaragua","Mexico","Peru","Bolivia","Ecuador","Rwanda","Burundi","Uganda","Tanzania","Congo","DRC","Yemen","Indonesia","Sumatra","Java","Sulawesi","Papua New Guinea","India","Myanmar","Thailand","Vietnam","China","Yunnan","Taiwan","Laos","Timor","Jamaica","Hawaii","Kona","Dominican Republic","Haiti","Cuba","Puerto Rico","Malawi","Zambia","Zimbabwe","Cameroon","Australia","Philippines","Nepal"];
+const VARIETIES=["Pink Bourbon","Red Bourbon","Yellow Bourbon","Bourbon","Gesha","Geisha","Caturra","Catuai","Castillo","Typica","SL28","SL34","Pacamara","Maragogipe","Ethiopian Heirloom","Heirloom","74110","74112","74158","Sidra","Mundo Novo","Catimor","Sarchimor","Parainema","Wush Wush","Chiroso","Laurina","Eugenioides","Tabi","Rume Sudan","Mokka","Batian","Ruiru 11","Obata","Villa Sarchi","Pacas","Marsellesa","Lempira","Cenicafe 1"];
+const MONTHS=["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+function labelDate(str){
+  const t=today(),y0=+t.slice(0,4),pad=n=>String(n).padStart(2,"0");
+  const ok=(y,m,d)=>m>=1&&m<=12&&d>=1&&d<=31;
+  const fix=(y,m,d)=>{if(y==null){y=y0;if(`${y}-${pad(m)}-${pad(d)}`>t)y--}if(y<100)y+=2000;return ok(y,m,d)?`${y}-${pad(m)}-${pad(d)}`:""};
+  let m;
+  if(m=str.match(/(20\d\d)[-\/.](\d{1,2})[-\/.](\d{1,2})/))return fix(+m[1],+m[2],+m[3]);
+  if(m=str.match(/(\d{1,2})\s*(?:st|nd|rd|th)?[\s.\-\/]*([a-z]{3})[a-z]*\.?[\s,.\-\/]*((?:20)?\d\d)?\b/i)){const mo=MONTHS.indexOf(m[2].toLowerCase());if(mo>=0)return fix(m[3]?+m[3]:null,mo+1,+m[1])}
+  if(m=str.match(/\b([a-z]{3})[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s*((?:20)?\d\d)?\b/i)){const mo=MONTHS.indexOf(m[1].toLowerCase());if(mo>=0)return fix(m[3]?+m[3]:null,mo+1,+m[2])}
+  if(m=str.match(/\b(\d{1,2})[\/.\-](\d{1,2})(?:[\/.\-]((?:20)?\d\d))?\b/)){
+    const y=m[3]?+m[3]:null,a=+m[1],b=+m[2];
+    const dm=fix(y,b,a),md=fix(y,a,b);
+    const fine=[dm,md].filter(x=>x&&x<=t).sort().reverse();
+    if(dm&&md&&dm!==md)labelDate.ambiguous=true;
+    return fine[0]||dm||md;
+  }
+  return "";
+}
+const tidy=v=>v&&/[A-Z]/.test(v)&&v===v.toUpperCase()?v.toLowerCase().replace(/(^|[\s,\-\/])([a-z])/g,(x,p,c)=>p+c.toUpperCase()):v;
+function parseLabelText(text){
+  const lines=text.split(/\n+/).map(l=>l.trim()).filter(Boolean),all=lines.join("\n"),low=all.toLowerCase(),d={},used=new Set(),unsure=["name"];
+  labelDate.ambiguous=false;
+  const take=(re,i)=>{const j=lines.findIndex(l=>re.test(l));if(j>=0&&i!==false)used.add(j);return j};
+  const pr=low.match(/\b(washed|wet[- ]process|natural|dry[- ]process|honey|anaerobic|carbonic|fermented|thermal shock|wet[- ]hulled)\b/);
+  if(pr){const w=pr[1];d.process=/washed|wet[- ]process/.test(w)?"Washed":/natural|dry/.test(w)?"Natural":/honey/.test(w)?"Honey":/anaerobic|carbonic/.test(w)?"Anaerobic":"Other";take(new RegExp(pr[1],"i"))}
+  const rl=low.match(/\b(medium[- ]light|light[- ]medium|medium[- ]dark|light|medium|dark)\b[\s-]*roast|roast(?:ed)?\s*(?:level|profile)?\s*[:\-]?\s*(medium[- ]light|medium[- ]dark|light|medium|dark)\b/);
+  if(rl){const w=(rl[1]||rl[2]).replace("-"," ").replace("light medium","medium light");d.roast=w[0].toUpperCase()+w.slice(1);take(/roast/i,false)}
+  const dl=lines.findIndex(l=>/roast(ed)?\s*(on|date)?/i.test(l)&&labelDate(l));
+  const dsrc=dl>=0?lines[dl]:lines.find(l=>labelDate(l)&&!/best|exp|use by|bb/i.test(l));
+  if(dsrc){d.roast_date=labelDate(dsrc.replace(/^.*?roast(ed)?\s*(on|date)?\s*[:\-]?/i,""))||labelDate(dsrc);used.add(lines.indexOf(dsrc));if(labelDate.ambiguous)unsure.push("roast_date")}
+  const wt=all.match(/(\d+(?:[.,]\d+)?)\s*(kg|g|gr|grams|oz)\b/i);
+  if(wt){const n=+wt[1].replace(",","."),u=wt[2].toLowerCase();d.bag_grams=Math.round(u==="kg"?n*1000:u==="oz"?n*28.35:n);take(new RegExp(wt[0].replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"i"))}
+  const oi=lines.findIndex(l=>ORIGINS.some(o=>new RegExp("\\b"+o+"\\b","i").test(l)));
+  if(oi>=0){const l=lines[oi].replace(/^(origin|country|region)\s*[:\-]\s*/i,"");d.origin=l.length<=40?l:ORIGINS.find(o=>new RegExp("\\b"+o+"\\b","i").test(l));used.add(oi)}
+  const vs=[];VARIETIES.forEach(v=>{if(new RegExp("\\b"+v+"\\b","i").test(all)&&!vs.some(x=>x.toLowerCase().includes(v.toLowerCase())))vs.push(v)});
+  if(vs.length){d.variety=vs.join(", ");take(new RegExp("\\b"+vs[0]+"\\b","i"))}
+  const ni=lines.findIndex(l=>/^(tasting notes|notes|flavou?r(s| notes)?|cup(ping)? (notes|profile)|we taste|tastes? (of|like))\b/i.test(l));
+  if(ni>=0){const rest=lines[ni].replace(/^[^:]*:?\s*/,"").trim();d.notes=rest||lines[ni+1]||"";used.add(ni);if(!rest)used.add(ni+1)}
+  if(!d.notes){
+    const fl=lines.findIndex((l,i)=>!used.has(i)&&!/\d/.test(l)&&l.split(/\s*[,·•|\/]\s*|\s{2,}|\s+and\s+/).filter(Boolean).length>=3&&l===l.toLowerCase());
+    if(fl>=0){d.notes=lines[fl].split(/\s*[,·•|\/]\s*|\s{2,}|\s+and\s+/).filter(Boolean).join(", ");used.add(fl)}
+  }
+  const known=knownRoasters();
+  const ri=lines.findIndex(l=>known.some(r=>{const a=l.toLowerCase(),b=r.toLowerCase();return a.includes(b)||b.split(/\s+/)[0].length>3&&a.split(/\s+/).includes(b.split(/\s+/)[0])}));
+  if(ri>=0){const l=lines[ri].toLowerCase();d.roaster=known.find(r=>l.includes(r.toLowerCase()))||known.find(r=>l.split(/\s+/).includes(r.toLowerCase().split(/\s+/)[0]));used.add(ri)}
+  else{const rj=lines.findIndex((l,i)=>i<3&&!used.has(i)&&/\b(roasters?|roastery|roasting|coffee|kaffe|koffie|caf[eé])\b/i.test(l)&&l.length<=40);
+    if(rj>=0){d.roaster=tidy(lines[rj]);used.add(rj);unsure.push("roaster")}}
+  const nm=lines.find((l,i)=>!used.has(i)&&/[a-z]/i.test(l)&&l.length>=2&&l.length<=40&&!/roast|www\.|http|@|net wt|weight|origin|process|variety|altitude|masl|producer|farm:|region/i.test(l));
+  if(nm)d.name=tidy(nm);
+  if(d.origin)d.origin=tidy(d.origin);
+  return {d,unsure};
+}
+$("#scanTextBtn").addEventListener("click",()=>{const w=$("#scanTextWrap");w.hidden=!w.hidden;$("#scanKey").hidden=true;if(!w.hidden)setTimeout(()=>$("#scanText").focus(),0)});
+$("#scanTextGo").addEventListener("click",()=>{const t=$("#scanText").value.trim();if(!t){scanStatus("Paste or scan the label text first.");return}const r=parseLabelText(t);applyLabel(r.d,r.unsure)});
+
+/* Photo path: Claude reads the label. */
+const SDK_URL="https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@1.3.0/+esm";
+const LABEL_SCHEMA={type:"object",additionalProperties:false,
+  required:["name","roaster","origin","variety","process","roast","roast_date","bag_grams","notes","unsure"],
+  properties:{name:{type:"string"},roaster:{type:"string"},origin:{type:"string"},variety:{type:"string"},
+    process:{type:"string",enum:[...PROCS,""]},roast:{type:"string",enum:[...ROASTS,""]},
+    roast_date:{type:"string"},bag_grams:{type:"integer"},notes:{type:"string"},
+    unsure:{type:"array",items:{type:"string",enum:Object.keys(SCAN_FIELDS)}}}};
+const LABEL_SYSTEM=`You read photos of specialty coffee bag labels for a home brewer's log. Read only what is printed on the label. When the label does not show a field, return an empty string, or 0 for bag_grams, rather than guessing.
+name: the coffee's own name as sold, such as the farm, lot or blend name. Not the roaster's name.
+roaster: the company that roasted it.
+origin: country first, then region if printed, for example "Colombia, Huila".
+variety: the coffee varieties, comma separated.
+process and roast: pick from the allowed values. Use Other for a process that is none of the named ones.
+roast_date: the date it was roasted, as YYYY-MM-DD. Not a best-before or packed date. If the year is missing, use the most recent such date that is not after today.
+notes: the tasting notes, comma separated.
+unsure: every field you filled but could not read clearly.`;
+let pendingPhoto=null;
+async function shrinkPhoto(file){
+  const url=URL.createObjectURL(file);
+  try{
+    const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no(new Error("decode"));i.src=url});
+    const k=Math.min(1,1568/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement("canvas");
+    c.width=Math.round(img.naturalWidth*k);c.height=Math.round(img.naturalHeight*k);
+    c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+    return c.toDataURL("image/jpeg",.85);
+  }finally{URL.revokeObjectURL(url)}
+}
+async function readPhoto(dataUrl){
+  const key=lsGet("claudeKey","");if(!key){$("#scanKey").hidden=false;$("#scanTextWrap").hidden=true;scanStatus("");setTimeout(()=>$("#scanKeyIn").focus(),0);return}
+  scanStatus("Reading the label. This takes a few seconds.");
+  let Anthropic;
+  try{({default:Anthropic}=await import(SDK_URL))}catch(e){scanStatus("No connection, so the photo cannot be read right now. Paste label text works offline.");return}
+  const client=new Anthropic({apiKey:key,dangerouslyAllowBrowser:true});
+  try{
+    const res=await client.beta.messages.create({
+      model:"claude-opus-5-5",max_tokens:16000,
+      betas:["server-side-fallback-2026-07-01"],fallbacks:"default",
+      output_config:{effort:"low",format:{type:"json_schema",schema:LABEL_SCHEMA}},
+      system:LABEL_SYSTEM,
+      messages:[{role:"user",content:[
+        {type:"image",source:{type:"base64",media_type:"image/jpeg",data:dataUrl.split(",")[1]}},
+        {type:"text",text:`Today is ${today()}. Roasters already in my log: ${knownRoasters().join(", ")||"none yet"}. If the roaster on this label is one of them, use that exact spelling.`}]}]
+    });
+    if(res.stop_reason==="refusal"){scanStatus("Claude would not read this photo. Paste label text instead.");return}
+    const tb=res.content.find(b=>b.type==="text");
+    let d;try{d=JSON.parse(tb&&tb.text)}catch(e){scanStatus("The reply came back incomplete. Try the photo again.");return}
+    applyLabel(d,d.unsure||[]);
+  }catch(err){
+    const is=C=>!!C&&err instanceof C;
+    if(is(Anthropic.AuthenticationError)||is(Anthropic.PermissionDeniedError)){scanStatus("Anthropic did not accept the key. Tap Forget it below and paste the key again.");$("#scanKeyNote").hidden=false}
+    else if(is(Anthropic.RateLimitError))scanStatus("Too many reads in a row, or the account is out of credit. Wait a minute, or check the balance at console.anthropic.com.");
+    else if(is(Anthropic.APIConnectionError))scanStatus("No connection, so the photo cannot be read right now. Paste label text works offline.");
+    else if(is(Anthropic.APIError)){const why=String((err.error&&err.error.error&&err.error.error.message)||err.message||"").slice(0,160);scanStatus(`Anthropic returned an error${err.status?" ("+err.status+")":""}: ${why} Try again, or use Paste label text.`)}
+    else scanStatus("Something went wrong reading the photo. Try again.");
+  }
+}
+$("#scanFile").addEventListener("change",async e=>{
+  const f=e.target.files&&e.target.files[0];if(!f)return;
+  $("#scanTextWrap").hidden=true;
+  try{pendingPhoto=await shrinkPhoto(f)}catch(err){scanStatus("That photo could not be opened. Try another.");return}
+  const pv=$("#scanPreview");pv.src=pendingPhoto;pv.hidden=false;
+  readPhoto(pendingPhoto);
+});
+$("#scanKeySave").addEventListener("click",()=>{
+  const k=$("#scanKeyIn").value.trim();
+  if(!/^sk-ant-/.test(k)){scanStatus("That does not look like an Anthropic key. It starts with sk-ant-.");return}
+  lsSet("claudeKey",k);$("#scanKeyIn").value="";$("#scanKey").hidden=true;$("#scanKeyNote").hidden=false;
+  if(pendingPhoto)readPhoto(pendingPhoto);
+});
+$("#scanKeyCancel").addEventListener("click",()=>{$("#scanKey").hidden=true;$("#scanKeyIn").value="";scanStatus("Paste label text is free and needs no key.")});
+$("#scanKeyForget").addEventListener("click",()=>{try{localStorage.removeItem("claudeKey")}catch(e){}$("#scanKeyNote").hidden=true;toast("Key removed from this phone")});
 $("#beanCancel").addEventListener("click",()=>{$("#beanEditor").hidden=true});
 $("#beanForm").addEventListener("submit",async e=>{
   e.preventDefault();
