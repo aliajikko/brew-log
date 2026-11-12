@@ -1,4 +1,4 @@
-const CACHE = "brewlog-v13";
+const CACHE = "brewlog-v14";
 const OCR = "brewlog-ocr-7.0.0"; // the label reader, kept across app updates
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 // cache: "reload" skips the browser's own 10 minute copy, so a new version never stores the old page
