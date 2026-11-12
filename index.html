@@ -10,8 +10,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Brew Log">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
+<link rel="icon" href="icon-192.png?v=2">
 <link rel="manifest" href="manifest.webmanifest">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}img{max-width:100%}html{-webkit-text-size-adjust:100%}</style>
 <title>Press and Switch Log</title>
@@ -131,7 +131,7 @@ ol.steps li.active{background:var(--sunk);margin-inline:-10px;padding-inline:10p
 /* form */
 form.log{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .f{display:flex;flex-direction:column;gap:4px;min-width:0}
-.f.wide{grid-column:1/-1}
+.f.wide,.wide{grid-column:1/-1}
 .f label{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em}
 .f input,.f select,.f textarea{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;width:100%;min-width:0}
 .f textarea{min-height:70px;resize:vertical}
@@ -253,6 +253,8 @@ ol.steps li.active{border-radius:12px}
 
 .scanbox{display:flex;flex-direction:column;gap:10px;background:var(--sunk);border-radius:16px;padding:12px}
 .scanbox label.btn{display:inline-flex;align-items:center}
+.scanhead{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.xbtn{flex:none;width:32px;height:32px;border-radius:999px;border:1px solid var(--edge);background:var(--glass-hi);color:var(--muted);font-size:14px;line-height:1;display:grid;place-items:center;cursor:pointer;padding:0}
 #scanPreview{max-height:160px;width:auto;align-self:flex-start;border-radius:12px;border:1px solid var(--edge)}
 .f.filled input,.f.filled select{background:var(--switch-soft);box-shadow:0 0 0 1.5px var(--switch)}
 .f.unsure input,.f.unsure select{background:var(--press-soft);box-shadow:0 0 0 1.5px var(--press)}
@@ -428,11 +430,13 @@ ol.steps li.active{border-radius:12px}
       <h3 id="beanEdTitle">Add coffee</h3>
       <form class="log" id="beanForm" autocomplete="off">
         <div class="scanbox wide" id="scanBox">
-          <div><b>Read the label</b><div class="muted small">Take a photo of the bag and it fills in what it can read. It all happens on your phone, free, and nothing is sent anywhere. Or skip it and type below.</div></div>
+          <div class="scanhead"><div><b>Read the label</b><div class="muted small">Take a photo of the bag and it fills in what it can read. It all happens on your phone, free, and nothing is sent anywhere.</div></div>
+            <button type="button" class="xbtn" id="scanClose" aria-label="Close, I will type it">&#x2715;</button></div>
           <div class="row"><label class="btn small primary" for="scanFile">Photo of the label</label><input type="file" id="scanFile" accept="image/*" hidden></div>
           <img id="scanPreview" alt="" hidden>
           <div class="hint" id="scanStatus" hidden></div>
         </div>
+        <button type="button" class="linkbtn wide" id="scanOpen" style="justify-self:start" hidden>Read the label from a photo</button>
         <div class="f"><label for="bName">Coffee name</label><input id="bName" required></div>
         <div class="f"><label for="bRoasterPick">Roaster</label><select id="bRoasterPick"></select></div>
         <div class="f" id="bRoasterNewWrap" hidden><label for="bRoaster">New roaster name</label><input id="bRoaster" placeholder="Meraki"></div>
@@ -1721,6 +1725,7 @@ function scanStatus(msg){const el=$("#scanStatus");el.hidden=!msg;el.textContent
 function resetScan(){
   Object.keys(SCAN_FIELDS).forEach(f=>scanBox(f).classList.remove("filled","unsure"));
   $("#scanPreview").hidden=true;$("#scanPreview").removeAttribute("src");$("#scanFile").value="";scanStatus("");
+  showScan(!lsGet("scanClosed",false));
 }
 Object.keys(SCAN_FIELDS).forEach(f=>["input","change"].forEach(ev=>$(SCAN_FIELDS[f]).addEventListener(ev,()=>scanBox(f).classList.remove("filled","unsure"))));
 function matchRoaster(v){
@@ -1807,6 +1812,11 @@ function parseLabelText(text){
   if(d.origin)d.origin=tidy(d.origin);
   return {d,unsure};
 }
+/* Closing the reader is remembered, for someone who mostly types. The link brings it back. */
+function showScan(on){$("#scanBox").hidden=!on;$("#scanOpen").hidden=on}
+$("#scanClose").addEventListener("click",()=>{lsSet("scanClosed",true);showScan(false);setTimeout(()=>$("#bName").focus(),0)});
+$("#scanOpen").addEventListener("click",()=>{lsSet("scanClosed",false);showScan(true)});
+
 /* The photo is read on the phone by Tesseract, a free open source reader. The first use downloads
    it (about 4 MB), after that it is kept on the phone. */
 const OCR_URL="https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.esm.min.js";
