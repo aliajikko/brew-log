@@ -1,6 +1,7 @@
-const CACHE = "brewlog-v10";
+const CACHE = "brewlog-v11";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
-self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS))); self.skipWaiting(); });
+// cache: "reload" skips the browser's own 10 minute copy, so a new version never stores the old page
+self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS.map(u => new Request(u, { cache: "reload" }))))); self.skipWaiting(); });
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))));
   self.clients.claim();
@@ -11,7 +12,7 @@ self.addEventListener("fetch", e => {
   if (url.origin === location.origin) {
     if (e.request.mode === "navigate") {
       // Network first so updates arrive, cached copy when offline
-      e.respondWith(fetch(e.request).then(r => { const cp = r.clone(); caches.open(CACHE).then(c => c.put("./index.html", cp)); return r; })
+      e.respondWith(fetch(new Request(e.request.url, { cache: "no-cache" })).then(r => { const cp = r.clone(); caches.open(CACHE).then(c => c.put("./index.html", cp)); return r; })
         .catch(() => caches.match("./index.html")));
       return;
     }

@@ -427,11 +427,16 @@ ol.steps li.active{border-radius:12px}
       <h3 id="beanEdTitle">Add coffee</h3>
       <form class="log" id="beanForm" autocomplete="off">
         <div class="scanbox wide" id="scanBox">
-          <div><b>Read the label</b><div class="muted small">Free, and works offline. Fills in what it can find. Check anything in colour, then save.</div></div>
+          <div><b>Read the label with your camera</b><div class="muted small">Optional, free, no photo is saved. Or skip it and type below.</div></div>
           <div class="row"><button type="button" class="btn small primary" id="scanTextBtn">Scan the label</button></div>
           <div class="wpanel" id="scanTextWrap" hidden>
-            <div class="muted small">Tap in the box, choose Scan Text and point the camera at the label. You can also copy the text out of a photo with Live Text and paste it here.</div>
-            <textarea id="scanText" rows="5" placeholder="Scan or paste the label text"></textarea>
+            <ol class="plain small">
+              <li>Tap inside the box below, then tap it once more. A small menu pops up.</li>
+              <li>Tap <b>Scan Text</b>. The camera opens inside the keyboard.</li>
+              <li>Point it at the label until the words show, then tap <b>Insert</b>.</li>
+              <li>Tap <b>Fill in</b>. Check anything in colour, then save.</li>
+            </ol>
+            <textarea id="scanText" rows="5" placeholder="The label's words land here"></textarea>
             <div class="row"><button type="button" class="btn small primary" id="scanTextGo">Fill in</button></div>
           </div>
           <div class="hint" id="scanStatus" hidden></div>
@@ -1926,7 +1931,16 @@ const splitCount=migrateBeanIds();
 pick.value=cur.id;renderBrew();resetForm(true);renderAll();
 if(splitCount)setTimeout(()=>toast(`Separated ${splitCount} ${splitCount>1?"coffees":"coffee"} that shared one record`),900);
 showTab(lsGet("tab","brew"));
-if("serviceWorker" in navigator&&location.protocol==="https:"){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
+if("serviceWorker" in navigator&&location.protocol==="https:"){
+  /* Check for a new version every time the app comes to the front. Swap to it straight away
+     if it arrives as the app opens, otherwise on the next open, so a half-typed brew is never lost. */
+  const hadSW=!!navigator.serviceWorker.controller;let shownAt=Date.now(),swapLater=false,swapped=false;
+  const swap=()=>{if(swapped)return;swapped=true;location.reload()};
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!hadSW)return;if(Date.now()-shownAt<8000)swap();else swapLater=true});
+  window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(reg=>{
+    document.addEventListener("visibilitychange",()=>{if(document.visibilityState!=="visible")return;shownAt=Date.now();if(swapLater)swap();else reg.update().catch(()=>{})});
+  }).catch(()=>{}));
+}
 </script>
 </body>
 </html>
