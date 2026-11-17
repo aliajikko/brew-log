@@ -244,6 +244,15 @@ nav.tabs{position:fixed;top:auto;left:50%;bottom:calc(12px + env(safe-area-inset
 ol.steps li.active{border-radius:12px}
 .ctar span{border-radius:8px}
 .bar{height:7px;border-radius:999px}
+.xbtn{flex:none;width:32px;height:32px;border-radius:999px;border:1px solid var(--edge);background:var(--glass-hi);color:var(--muted);font-size:14px;line-height:1;display:grid;place-items:center;cursor:pointer;padding:0}
+.rsteps{display:flex;flex-direction:column;gap:6px}
+.rstep{display:grid;grid-template-columns:68px minmax(0,1fr) 32px;grid-template-areas:"t a x" ". v .";gap:6px;align-items:center;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.rstep:last-child{border-bottom:0}
+.rstep .rt{grid-area:t}.rstep .ra{grid-area:a}.rstep .rx{grid-area:x}
+.f .rstep .rv{grid-area:v;justify-self:start;width:auto;padding:6px 10px;font-size:13px}
+.rsteps.ap .rstep{grid-template-areas:"t a x"}
+.rsteps.ap .rv{display:none}
+.tag.mine{background:var(--press-soft);color:var(--press)}
 .bar i{border-radius:999px}
 .clock{font-weight:200;letter-spacing:-.04em}
 
@@ -251,14 +260,6 @@ ol.steps li.active{border-radius:12px}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .toast{background:rgba(242,243,240,.86);color:#1C1C1E}}
 :root[data-theme="dark"] .toast{background:rgba(242,243,240,.86);color:#1C1C1E}
 
-.scanbox{display:flex;flex-direction:column;gap:10px;background:var(--sunk);border-radius:16px;padding:12px}
-.scanbox label.btn{display:inline-flex;align-items:center}
-.scanhead{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
-.xbtn{flex:none;width:32px;height:32px;border-radius:999px;border:1px solid var(--edge);background:var(--glass-hi);color:var(--muted);font-size:14px;line-height:1;display:grid;place-items:center;cursor:pointer;padding:0}
-#scanPreview{max-height:160px;width:auto;align-self:flex-start;border-radius:12px;border:1px solid var(--edge)}
-.f.filled input,.f.filled select{background:var(--switch-soft);box-shadow:0 0 0 1.5px var(--switch)}
-.f.unsure input,.f.unsure select{background:var(--press-soft);box-shadow:0 0 0 1.5px var(--press)}
-.f.unsure label::after{content:"  check this";color:var(--press)}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
   .box,.seg{background:var(--glass-hi)}
 }
@@ -336,7 +337,29 @@ ol.steps li.active{border-radius:12px}
         <button class="chip" aria-pressed="false" data-v="expert">Experts</button>
         <button class="chip" aria-pressed="false" data-v="champ">Champions</button>
         <button class="chip" aria-pressed="false" data-v="train">Training</button>
+        <button class="chip" aria-pressed="false" data-v="mine">Mine</button>
       </div>
+    </div>
+    <div class="row"><button class="btn primary" id="addRecipeBtn" type="button">Add a recipe</button><span class="muted small">Got one from a café or a friend? Save it here and it works like the others.</span></div>
+    <div class="box panel" id="recipeEditor" hidden>
+      <div class="row between" style="flex-wrap:nowrap"><h3 id="rEdTitle">Add a recipe</h3><button type="button" class="xbtn" id="rEdClose" aria-label="Close without saving">&#x2715;</button></div>
+      <form class="log" id="recipeForm" autocomplete="off">
+        <div class="f wide"><label for="rName">Recipe name</label><input id="rName" required placeholder="The café's Switch recipe"></div>
+        <div class="f"><label for="rFrom">From</label><input id="rFrom" placeholder="Café or barista"></div>
+        <div class="f"><label for="rDev">Brewer</label><select id="rDev"><option value="ap">AeroPress</option><option value="sw">Hario Switch</option></select></div>
+        <div class="f"><label for="rDose">Coffee (g)</label><input id="rDose" type="number" inputmode="decimal" step="0.1" min="1" required></div>
+        <div class="f"><label for="rWater">Water (g)</label><input id="rWater" type="number" inputmode="decimal" step="1" min="1" required></div>
+        <div class="f"><label for="rTemp">Water temp (°C)</label><input id="rTemp" inputmode="decimal" placeholder="93"></div>
+        <div class="f"><label for="rClicks">C5 clicks</label><input id="rClicks" inputmode="decimal" placeholder="22"></div>
+        <div class="f wide"><label for="rGrind">Their grind, as they said it</label><input id="rGrind" placeholder="Medium fine, EK43 at 9"></div>
+        <div class="f wide"><label for="rSetup">Setup</label><input id="rSetup" placeholder="Rinsed paper, valve closed to start"></div>
+        <div class="f wide"><label>Steps</label>
+          <div class="rsteps" id="rSteps"></div>
+          <div class="row" style="margin-top:6px"><button type="button" class="btn small" id="rAddStep">Add a step</button></div>
+          <div class="muted small">Time from the moment water first hits the coffee. End with when it is finished, for example 3:00 Done.</div></div>
+        <div class="f wide"><label for="rNotes">Notes</label><textarea id="rNotes" placeholder="The coffee they used, what made it special"></textarea></div>
+        <div class="row wide between"><button type="button" class="btn danger" id="rDelete" hidden>Delete recipe</button><span></span><button class="btn primary" type="submit" id="rSave">Save recipe</button></div>
+      </form>
     </div>
     <p class="muted" style="margin:0;font-size:13px">Nobody here published Timemore C5 settings. The click numbers are estimates, converted from each recipe's own grinder at 31 µm per click counted from burr contact. The Guide tab shows the working.</p>
     <div class="panel" id="recipeList"></div>
@@ -429,14 +452,6 @@ ol.steps li.active{border-radius:12px}
     <div class="box panel" id="beanEditor" hidden>
       <h3 id="beanEdTitle">Add coffee</h3>
       <form class="log" id="beanForm" autocomplete="off">
-        <div class="scanbox wide" id="scanBox">
-          <div class="scanhead"><div><b>Read the label</b><div class="muted small">Take a photo of the bag and it fills in what it can read. It all happens on your phone, free, and nothing is sent anywhere.</div></div>
-            <button type="button" class="xbtn" id="scanClose" aria-label="Close, I will type it">&#x2715;</button></div>
-          <div class="row"><label class="btn small primary" for="scanFile">Photo of the label</label><input type="file" id="scanFile" accept="image/*" hidden></div>
-          <img id="scanPreview" alt="" hidden>
-          <div class="hint" id="scanStatus" hidden></div>
-        </div>
-        <button type="button" class="linkbtn wide" id="scanOpen" style="justify-self:start" hidden>Read the label from a photo</button>
         <div class="f"><label for="bName">Coffee name</label><input id="bName" required></div>
         <div class="f"><label for="bRoasterPick">Roaster</label><select id="bRoasterPick"></select></div>
         <div class="f" id="bRoasterNewWrap" hidden><label for="bRoaster">New roaster name</label><input id="bRoaster" placeholder="Meraki"></div>
@@ -732,7 +747,14 @@ const R = [
 ];
 const byId = Object.fromEntries(R.map(r=>[r.id,r]));
 const DEV = {ap:"AeroPress", sw:"Switch", cup:"Cupping"};
-const KIND = {expert:"Expert", champ:"Champion", train:"Training"};
+const KIND = {expert:"Expert", champ:"Champion", train:"Training", mine:"Mine"};
+/* Your own recipes live beside the built-in ones, so the timer, the log and the coach treat them the same. */
+let myRecipes = lsGet("recipes-local",[]);
+function syncMyRecipes(){
+  for(let i=R.length-1;i>=0;i--)if(R[i].mine){delete byId[R[i].id];R.splice(i,1)}
+  myRecipes.forEach(r=>{const x=Object.assign({kind:"mine",mine:true,verified:true,cred:"",grind:"",setup:"",notes:"",src:"",c5:""},r);R.push(x);byId[x.id]=x});
+}
+syncMyRecipes();
 
 /* ---------- helpers ---------- */
 const $ = s=>document.querySelector(s);
@@ -744,7 +766,9 @@ function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTi
 function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 function stats(items){return `<div class="stats">${items.map(([k,v])=>`<div class="stat"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join("")}</div>`}
-function recipeLabel(r){return `${r.author}, ${r.name}`}
+function recipeLabel(r){return r.mine?(r.author&&r.author!=="Your recipe"?`${r.name}, from ${r.author}`:r.name):`${r.author}, ${r.name}`}
+/* the same name with the important part in bold, for the lines under the pickers */
+function recipeHead(r){return r.mine?`<b>${esc(r.name)}</b>${r.author&&r.author!=="Your recipe"?`, from ${esc(r.author)}`:""}`:`<b>${esc(r.author)}</b>, ${esc(r.name)}`}
 
 /* ---------- tabs ---------- */
 function showTab(name){
@@ -797,28 +821,29 @@ function bestFor(id){
   return `<div class="mine">You: ${mine.length} brew${mine.length>1?"s":""}. Best ${best.score}/10${best.clicks?` at ${best.clicks} clicks`:""}${best.temp?`, ${best.temp} °C`:""}.</div>`;
 }
 function renderRecipes(){
-  const list = R.filter(r=>(fDev==="all"||r.dev===fDev)&&(fKind==="all"||r.kind===fKind));
+  const list = R.filter(r=>(fDev==="all"||r.dev===fDev)&&(fKind==="all"||r.kind===fKind)).sort((a,b)=>(b.mine?1:0)-(a.mine?1:0));
+  if(!list.length){$("#recipeList").innerHTML=`<p class="muted" style="margin:0">${fKind==="mine"?"No recipes of your own yet. Tap Add a recipe, or Copy and adjust on any recipe below.":"Nothing matches these filters."}</p>`;return}
   $("#recipeList").innerHTML = list.map(r=>`
     <article class="recipe ${r.dev}" id="r-${r.id}">
       <div class="head">
-        <div class="row" style="gap:6px"><span class="tag ${r.dev}">${DEV[r.dev]}</span><span class="tag plain">${KIND[r.kind]}</span>${r.verified?"":`<span class="tag warn">Unverified</span>`}</div>
+        <div class="row" style="gap:6px"><span class="tag ${r.dev}">${DEV[r.dev]}</span><span class="tag ${r.mine?"mine":"plain"}">${KIND[r.kind]}</span>${r.verified?"":`<span class="tag warn">Unverified</span>`}</div>
         <h3>${esc(r.name)}</h3>
-        <div class="by">${esc(r.author)}. ${esc(r.cred)}</div>
-        ${stats([["Coffee",r.dose+" g"],["Water",r.water+" g"],["Ratio",ratio(r.dose,r.water)],["C5 est.",r.c5]])}
+        <div class="by">${esc(r.author)}${r.cred?". "+esc(r.cred):""}</div>
+        ${stats([["Coffee",r.dose+" g"],["Water",r.water+" g"],["Ratio",ratio(r.dose,r.water)],[r.mine?"C5":"C5 est.",r.c5||"–"]])}
         ${bestFor(r.id)}
-        <div class="row"><button class="btn small primary" data-brew="${r.id}">Brew this</button>${r.dev==="cup"?"":`<button class="btn small" data-log="${r.id}">Log this</button>`}</div>
+        <div class="row"><button class="btn small primary" data-brew="${r.id}">Brew this</button>${r.dev==="cup"?"":`<button class="btn small" data-log="${r.id}">Log this</button>`}${r.mine?`<button class="btn small" data-redit="${r.id}">Edit</button>`:r.dev==="cup"?"":`<button class="btn small" data-rcopy="${r.id}">Copy and adjust</button>`}</div>
       </div>
       <details>
         <summary>Method and source</summary>
         <div class="body">
           <dl class="kv">
-            <dt>Water temp</dt><dd>${esc(r.temp)}</dd>
-            <dt>Grind</dt><dd>${esc(r.grind)}</dd>
+            ${r.temp?`<dt>Water temp</dt><dd>${esc(r.temp)}</dd>`:""}
+            ${r.grind?`<dt>Grind</dt><dd>${esc(r.grind)}</dd>`:""}
             ${r.bypass?`<dt>Bypass</dt><dd>${esc(r.bypass)}${typeof r.bypass==="number"?" g":""}</dd>`:""}
-            <dt>Setup</dt><dd>${esc(r.setup)}</dd>
+            ${r.setup?`<dt>Setup</dt><dd>${esc(r.setup)}</dd>`:""}
           </dl>
           ${stepsHtml(r)}
-          <p class="muted" style="margin:0;font-size:13px">${esc(r.notes)}</p>
+          ${r.notes?`<p class="muted" style="margin:0;font-size:13px">${esc(r.notes)}</p>`:""}
           ${r.src?`<a href="${esc(r.src)}" target="_blank" rel="noopener" style="font-size:13px">Source</a>`:""}
         </div>
       </details>
@@ -826,12 +851,85 @@ function renderRecipes(){
 }
 $("#recipeList").addEventListener("click",e=>{
   const b=e.target.closest("[data-brew]"); if(b){pickBrew(b.dataset.brew);showTab("brew");window.scrollTo(0,0);return}
-  const l=e.target.closest("[data-log]"); if(l){prefillFromRecipe(l.dataset.log);showTab("log");window.scrollTo(0,0)}
+  const l=e.target.closest("[data-log]"); if(l){prefillFromRecipe(l.dataset.log);showTab("log");window.scrollTo(0,0);return}
+  const ed=e.target.closest("[data-redit]"); if(ed){openRecipeEditor(ed.dataset.redit,false);return}
+  const cp=e.target.closest("[data-rcopy]"); if(cp){openRecipeEditor(cp.dataset.rcopy,true);return}
+});
+
+/* ---------- your own recipes ---------- */
+let recipeEditing=null;
+function stepRow(s){
+  s=s||{};
+  return `<div class="rstep"><input class="rt" value="${s.t!=null?mmss(s.t):""}" placeholder="0:00" inputmode="numbers-and-punctuation" aria-label="Time"><input class="ra" value="${esc(s.a||"")}" placeholder="What to do" aria-label="Step"><select class="rv" aria-label="Valve"><option value="">Valve</option><option value="open"${s.v==="open"?" selected":""}>Open</option><option value="closed"${s.v==="closed"?" selected":""}>Closed</option></select><button type="button" class="xbtn rx" aria-label="Remove this step">&#x2715;</button></div>`;
+}
+function syncValveCol(){$("#rSteps").classList.toggle("ap",$("#rDev").value!=="sw")}
+function openRecipeEditor(id,copy){
+  const r=id?byId[id]:null;recipeEditing=r&&r.mine&&!copy?r:null;
+  $("#rEdTitle").textContent=recipeEditing?`Edit ${r.name}`:copy?`Your version of ${r.name}`:"Add a recipe";
+  const set=(i,v)=>$(i).value=v==null?"":v;
+  set("#rName",r?(copy?r.name+", my way":r.name):"");set("#rFrom",r?(copy?"":r.mine?r.author:""):"");
+  $("#rDev").value=r&&r.dev!=="cup"?r.dev:"ap";
+  set("#rDose",r?r.dose:"");set("#rWater",r?r.water:"");set("#rTemp",r?firstNum(r.temp):"");set("#rClicks",r?firstNum(r.c5):"");
+  set("#rGrind",r?(r.mine?r.grind:""):"");set("#rSetup",r?r.setup:"");set("#rNotes",r&&r.mine?r.notes:"");
+  $("#rSteps").innerHTML=(r?r.steps:[{t:0,a:""},{t:180,a:"Done."}]).map(stepRow).join("");
+  $("#rDelete").hidden=!recipeEditing;syncValveCol();
+  $("#recipeEditor").hidden=false;$("#recipeEditor").scrollIntoView({block:"start"});window.scrollBy(0,-12);
+  setTimeout(()=>$("#rName").focus(),0);
+}
+function refreshRecipes(){
+  syncMyRecipes();fillBrewPick();renderRecipes();
+  const keep=fRecipe.value;fillRecipeOptions($("#fDevice").value);if([...fRecipe.options].some(o=>o.value===keep))fRecipe.value=keep;showRecipeInfo();
+  if(!byId[cur.id])pickBrew(R[0].id);
+}
+$("#addRecipeBtn").addEventListener("click",()=>openRecipeEditor(null,false));
+$("#rEdClose").addEventListener("click",()=>{$("#recipeEditor").hidden=true});
+$("#rDev").addEventListener("change",syncValveCol);
+$("#rAddStep").addEventListener("click",()=>{
+  const rows=[...$("#rSteps").querySelectorAll(".rstep")],last=rows[rows.length-1];
+  const html=stepRow({});
+  /* new steps go in before a closing Done step, so the finish stays last */
+  if(last&&/^done\b/i.test(last.querySelector(".ra").value.trim()))last.insertAdjacentHTML("beforebegin",html);else $("#rSteps").insertAdjacentHTML("beforeend",html);
+  const added=[...$("#rSteps").querySelectorAll(".rstep")].find(x=>!x.querySelector(".ra").value&&!x.querySelector(".rt").value);
+  if(added)added.querySelector(".rt").focus();
+});
+$("#rSteps").addEventListener("click",e=>{const x=e.target.closest(".rx");if(x)x.closest(".rstep").remove()});
+$("#recipeForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const dev=$("#rDev").value,name=$("#rName").value.trim(),from=$("#rFrom").value.trim();
+  const dose=+$("#rDose").value,water=+$("#rWater").value;
+  const rows=[...$("#rSteps").querySelectorAll(".rstep")].map(row=>({t:parseTime(row.querySelector(".rt").value),a:row.querySelector(".ra").value.trim(),v:dev==="sw"?row.querySelector(".rv").value:""})).filter(x=>x.a||x.t!=null);
+  if(!name||!(dose>0)||!(water>0)){toast("Give it a name, the coffee and the water.");return}
+  if(!rows.length){toast("Add at least one step with a time.");return}
+  if(rows.some(x=>x.t==null)){toast("Every step needs a time, like 1:30.");return}
+  if(rows.some(x=>!x.a)){toast("Every step needs something to do.");return}
+  const steps=rows.sort((a,b)=>a.t-b.t).map(x=>x.v?{t:x.t,a:x.a,v:x.v}:{t:x.t,a:x.a});
+  const temp=$("#rTemp").value.trim(),clicks=$("#rClicks").value.trim(),grind=$("#rGrind").value.trim();
+  const created=recipeEditing?recipeEditing.created:Date.now();
+  const rec={id:recipeEditing?recipeEditing.id:"my-"+newId(),dev,name,author:from||"Your recipe",
+    cred:"Saved "+new Date(created).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}),
+    dose,water,temp:temp?(/^\d+(\.\d+)?$/.test(temp)?temp+" °C":temp):"",c5:clicks,
+    grind:grind||(clicks?clicks+" clicks on the C5":""),setup:$("#rSetup").value.trim(),steps,notes:$("#rNotes").value.trim(),created};
+  myRecipes=myRecipes.filter(x=>x.id!==rec.id).concat(rec);lsSet("recipes-local",myRecipes);
+  refreshRecipes();$("#recipeEditor").hidden=true;toast(recipeEditing?"Recipe updated":"Recipe saved");
+  const card=document.getElementById("r-"+rec.id);if(card){card.scrollIntoView({block:"start"});window.scrollBy(0,-12)}
+});
+$("#rDelete").addEventListener("click",()=>{
+  const r=recipeEditing;if(!r)return;
+  const n=brews.filter(b=>b.recipe===r.id).length;
+  if(!confirm(n?`Delete ${r.name}? ${plural(n,"logged brew")} used it. Those stay in your log, shown as your own recipe.`:`Delete ${r.name}? This cannot be undone.`))return;
+  myRecipes=myRecipes.filter(x=>x.id!==r.id);lsSet("recipes-local",myRecipes);
+  $("#recipeEditor").hidden=true;refreshRecipes();renderAll();toast("Recipe deleted");
 });
 
 /* ---------- brew tab ---------- */
 const pick = $("#brewPick");
-pick.innerHTML = ["ap","sw","cup"].map(d=>`<optgroup label="${DEV[d]}">${R.filter(r=>r.dev===d).map(r=>`<option value="${r.id}">${esc(recipeLabel(r))}</option>`).join("")}</optgroup>`).join("");
+function fillBrewPick(){
+  const mine=R.filter(r=>r.mine);
+  pick.innerHTML=(mine.length?`<optgroup label="My recipes">${mine.map(r=>`<option value="${r.id}">${esc(recipeLabel(r))}</option>`).join("")}</optgroup>`:"")+
+    ["ap","sw","cup"].map(d=>`<optgroup label="${DEV[d]}">${R.filter(r=>r.dev===d&&!r.mine).map(r=>`<option value="${r.id}">${esc(recipeLabel(r))}</option>`).join("")}</optgroup>`).join("");
+  try{if(cur&&byId[cur.id])pick.value=cur.id}catch(e){} /* cur is not set yet on the very first fill */
+}
+fillBrewPick();
 let cur = byId[lsGet("brewRecipe","chronicler-5050")] || R[0];
 let running=false, startAt=0, elapsed=0, raf=null, lastIdx=-1, audio=null, wake=null;
 
@@ -862,8 +960,8 @@ $("#doseReset").addEventListener("click",()=>setScale(cur.dose));
 pick.addEventListener("change",()=>pickBrew(pick.value));
 
 function renderBrew(){
-  $("#brewName").innerHTML=`<span><b>${esc(cur.author)}</b>, ${esc(cur.name)}</span>`;
-  $("#brewStats").innerHTML = stats([["Coffee",sDose()+" g"],["Water",sWater()+" g"],["Ratio",ratio(sDose(),sWater())],["Temp",cur.temp],["C5 est.",cur.c5]]);
+  $("#brewName").innerHTML=`<span>${recipeHead(cur)}</span>`;
+  $("#brewStats").innerHTML = stats([["Coffee",sDose()+" g"],["Water",sWater()+" g"],["Ratio",ratio(sDose(),sWater())],["Temp",cur.temp||"–"],[cur.mine?"C5":"C5 est.",cur.c5||"–"]]);
   $("#brewDose").value=sDose();
   $("#doseReset").hidden=scale===1;
   $("#brewPrep").textContent = scaleText(cur.setup)+(scale===1?"":`  Scaled from the recipe's ${cur.dose} g.`);
@@ -925,7 +1023,7 @@ function showRecipeInfo(){
   const el=$("#recipeInfo");if(!el)return;
   const r=byId[fRecipe.value];
   el.hidden=!r;
-  el.innerHTML=r?[`<span><b>${esc(r.author)}</b>, ${esc(r.name)}</span>`,r.cred&&`<span>${esc(r.cred)}</span>`,
+  el.innerHTML=r?[`<span>${recipeHead(r)}</span>`,r.cred&&`<span>${esc(r.cred)}</span>`,
     `<button type="button" class="linkbtn" data-openrecipe="${esc(r.id)}">Open the recipe</button>`].filter(Boolean).join(""):"";
 }
 $("#recipeInfo").addEventListener("click",e=>{
@@ -1712,157 +1810,10 @@ function openBeanEditor(id,restock){
   const set=(i,v)=>$(i).value=v??"";
   set("#bName",b&&b.name);fillRoasters();setRoaster("b",b&&b.roaster);set("#bOrigin",b&&b.origin);set("#bVariety",b&&b.variety);set("#bRoast",b&&b.roast);set("#bProcess",b&&b.process);
   set("#bRoastDate",restock?"":b&&b.roastDate);set("#bBag",b&&b.bagWeight);set("#bNotes",b&&b.notes);
-  resetScan();
   $("#beanEditor").hidden=false;setTimeout(()=>$(restock?"#bRoastDate":"#bName").focus(),0);
 }
 $("#addBeanBtn").addEventListener("click",()=>openBeanEditor(null));
 
-/* ---------- label reading ---------- */
-const SCAN_FIELDS={name:"#bName",roaster:"#bRoasterPick",origin:"#bOrigin",variety:"#bVariety",roast:"#bRoast",process:"#bProcess",roast_date:"#bRoastDate",bag_grams:"#bBag",notes:"#bNotes"};
-const ROASTS=["Light","Medium light","Medium","Medium dark","Dark"],PROCS=["Washed","Natural","Honey","Anaerobic","Other"];
-const scanBox=f=>$(SCAN_FIELDS[f]).closest(".f");
-function scanStatus(msg){const el=$("#scanStatus");el.hidden=!msg;el.textContent=msg||""}
-function resetScan(){
-  Object.keys(SCAN_FIELDS).forEach(f=>scanBox(f).classList.remove("filled","unsure"));
-  $("#scanPreview").hidden=true;$("#scanPreview").removeAttribute("src");$("#scanFile").value="";scanStatus("");
-  showScan(!lsGet("scanClosed",false));
-}
-Object.keys(SCAN_FIELDS).forEach(f=>["input","change"].forEach(ev=>$(SCAN_FIELDS[f]).addEventListener(ev,()=>scanBox(f).classList.remove("filled","unsure"))));
-function matchRoaster(v){
-  const k=String(v||"").trim().toLowerCase();if(!k)return "";
-  const known=knownRoasters();
-  return known.find(r=>r.toLowerCase()===k)||known.find(r=>{const r2=r.toLowerCase();return r2.startsWith(k)||k.startsWith(r2)})||String(v).trim();
-}
-function pickOpt(list,v){const k=String(v||"").trim().toLowerCase();return list.find(o=>o.toLowerCase()===k)||""}
-function applyLabel(d,unsure){
-  const set={
-    name:v=>{$("#bName").value=v},roaster:v=>setRoaster("b",matchRoaster(v)),origin:v=>{$("#bOrigin").value=v},variety:v=>{$("#bVariety").value=v},
-    roast:v=>{const o=pickOpt(ROASTS,v);if(o)$("#bRoast").value=o;return !!o},process:v=>{const o=pickOpt(PROCS,v);if(o)$("#bProcess").value=o;return !!o},
-    roast_date:v=>{if(/^\d{4}-\d{2}-\d{2}$/.test(v)){$("#bRoastDate").value=v;return true}return false},
-    bag_grams:v=>{if(+v>0){$("#bBag").value=Math.round(+v);return true}return false},notes:v=>{$("#bNotes").value=v}
-  };
-  const got=[];
-  Object.keys(SCAN_FIELDS).forEach(f=>{
-    const v=d[f];if(v==null||v===""||v===0)return;
-    if(set[f](typeof v==="string"?v.trim():v)===false)return;
-    got.push(f);const box=scanBox(f);box.classList.add("filled");
-    if((unsure||[]).includes(f))box.classList.add("unsure");
-  });
-  const n=got.length,u=got.filter(f=>(unsure||[]).includes(f)).length;
-  scanStatus(!n?"Could not read enough to fill anything in. Try again closer, straight on, in good light, with the label filling the photo.":`Filled in ${n} ${n>1?"fields":"field"}${u?`, ${u} to check`:""}. Anything wrong, just change it before you save.`);
-}
-
-/* Turns the text read off a label into form fields, with simple rules. */
-const ORIGINS=["Ethiopia","Kenya","Colombia","Brazil","Guatemala","Honduras","Costa Rica","Panama","El Salvador","Nicaragua","Mexico","Peru","Bolivia","Ecuador","Rwanda","Burundi","Uganda","Tanzania","Congo","DRC","Yemen","Indonesia","Sumatra","Java","Sulawesi","Papua New Guinea","India","Myanmar","Thailand","Vietnam","China","Yunnan","Taiwan","Laos","Timor","Jamaica","Hawaii","Kona","Dominican Republic","Haiti","Cuba","Puerto Rico","Malawi","Zambia","Zimbabwe","Cameroon","Australia","Philippines","Nepal"];
-const VARIETIES=["Pink Bourbon","Red Bourbon","Yellow Bourbon","Bourbon","Gesha","Geisha","Caturra","Catuai","Castillo","Typica","SL28","SL34","Pacamara","Maragogipe","Ethiopian Heirloom","Heirloom","74110","74112","74158","Sidra","Mundo Novo","Catimor","Sarchimor","Parainema","Wush Wush","Chiroso","Laurina","Eugenioides","Tabi","Rume Sudan","Mokka","Batian","Ruiru 11","Obata","Villa Sarchi","Pacas","Marsellesa","Lempira","Cenicafe 1"];
-const MONTHS=["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
-function labelDate(str){
-  const t=today(),y0=+t.slice(0,4),pad=n=>String(n).padStart(2,"0");
-  const ok=(y,m,d)=>m>=1&&m<=12&&d>=1&&d<=31;
-  const fix=(y,m,d)=>{if(y==null){y=y0;if(`${y}-${pad(m)}-${pad(d)}`>t)y--}if(y<100)y+=2000;return ok(y,m,d)?`${y}-${pad(m)}-${pad(d)}`:""};
-  let m;
-  if(m=str.match(/(20\d\d)[-\/.](\d{1,2})[-\/.](\d{1,2})/))return fix(+m[1],+m[2],+m[3]);
-  if(m=str.match(/(\d{1,2})\s*(?:st|nd|rd|th)?[\s.\-\/]*([a-z]{3})[a-z]*\.?[\s,.\-\/]*((?:20)?\d\d)?\b/i)){const mo=MONTHS.indexOf(m[2].toLowerCase());if(mo>=0)return fix(m[3]?+m[3]:null,mo+1,+m[1])}
-  if(m=str.match(/\b([a-z]{3})[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s*((?:20)?\d\d)?\b/i)){const mo=MONTHS.indexOf(m[1].toLowerCase());if(mo>=0)return fix(m[3]?+m[3]:null,mo+1,+m[2])}
-  if(m=str.match(/\b(\d{1,2})[\/.\-](\d{1,2})(?:[\/.\-]((?:20)?\d\d))?\b/)){
-    const y=m[3]?+m[3]:null,a=+m[1],b=+m[2];
-    const dm=fix(y,b,a),md=fix(y,a,b);
-    const fine=[dm,md].filter(x=>x&&x<=t).sort().reverse();
-    if(dm&&md&&dm!==md)labelDate.ambiguous=true;
-    return fine[0]||dm||md;
-  }
-  return "";
-}
-const tidy=v=>v&&/[A-Z]/.test(v)&&v===v.toUpperCase()?v.toLowerCase().replace(/(^|[\s,\-\/])([a-z])/g,(x,p,c)=>p+c.toUpperCase()):v;
-function parseLabelText(text){
-  const lines=text.split(/\n+/).map(l=>l.trim()).filter(Boolean),all=lines.join("\n"),low=all.toLowerCase(),d={},used=new Set(),unsure=["name"];
-  labelDate.ambiguous=false;
-  const take=(re,i)=>{const j=lines.findIndex(l=>re.test(l));if(j>=0&&i!==false)used.add(j);return j};
-  const pr=low.match(/\b(washed|wet[- ]process|natural|dry[- ]process|honey|anaerobic|carbonic|fermented|thermal shock|wet[- ]hulled)\b/);
-  if(pr){const w=pr[1];d.process=/washed|wet[- ]process/.test(w)?"Washed":/natural|dry/.test(w)?"Natural":/honey/.test(w)?"Honey":/anaerobic|carbonic/.test(w)?"Anaerobic":"Other";take(new RegExp(pr[1],"i"))}
-  const rl=low.match(/\b(medium[- ]light|light[- ]medium|medium[- ]dark|light|medium|dark)\b[\s-]*roast|roast(?:ed)?\s*(?:level|profile)?\s*[:\-]?\s*(medium[- ]light|medium[- ]dark|light|medium|dark)\b/);
-  if(rl){const w=(rl[1]||rl[2]).replace("-"," ").replace("light medium","medium light");d.roast=w[0].toUpperCase()+w.slice(1);take(/roast/i,false)}
-  const dl=lines.findIndex(l=>/roast(ed)?\s*(on|date)?/i.test(l)&&labelDate(l));
-  const dsrc=dl>=0?lines[dl]:lines.find(l=>labelDate(l)&&!/best|exp|use by|bb/i.test(l));
-  if(dsrc){d.roast_date=labelDate(dsrc.replace(/^.*?roast(ed)?\s*(on|date)?\s*[:\-]?/i,""))||labelDate(dsrc);used.add(lines.indexOf(dsrc));if(labelDate.ambiguous)unsure.push("roast_date")}
-  const wt=all.match(/(\d+(?:[.,]\d+)?)\s*(kg|g|gr|grams|oz)\b/i);
-  if(wt){const n=+wt[1].replace(",","."),u=wt[2].toLowerCase();d.bag_grams=Math.round(u==="kg"?n*1000:u==="oz"?n*28.35:n);take(new RegExp(wt[0].replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"i"))}
-  const oi=lines.findIndex(l=>ORIGINS.some(o=>new RegExp("\\b"+o+"\\b","i").test(l)));
-  if(oi>=0){const l=lines[oi].replace(/^(origin|country|region)\s*[:\-]\s*/i,"");d.origin=l.length<=40?l:ORIGINS.find(o=>new RegExp("\\b"+o+"\\b","i").test(l));used.add(oi)}
-  const vs=[];VARIETIES.forEach(v=>{if(new RegExp("\\b"+v+"\\b","i").test(all)&&!vs.some(x=>x.toLowerCase().includes(v.toLowerCase())))vs.push(v)});
-  if(vs.length){d.variety=vs.join(", ");take(new RegExp("\\b"+vs[0]+"\\b","i"))}
-  const ni=lines.findIndex(l=>/^(tasting notes|notes|flavou?r(s| notes)?|cup(ping)? (notes|profile)|we taste|tastes? (of|like))\b/i.test(l));
-  if(ni>=0){
-    const rest=lines[ni].replace(/^[^:]*:?\s*/,"").trim();let j=rest?ni:ni+1,txt=rest||lines[j]||"";used.add(ni);used.add(j);
-    /* notes that wrap onto the next line end in a comma or "and" */
-    while(/(,|\band)\s*$/i.test(txt)&&lines[j+1]&&!/\d/.test(lines[j+1])){j++;txt+=" "+lines[j];used.add(j)}
-    d.notes=txt.replace(/[\s,;.]+$/,"").replace(/\s+,/g,",");
-  }
-  if(!d.notes){
-    const fl=lines.findIndex((l,i)=>!used.has(i)&&!/\d/.test(l)&&l.split(/\s*[,·•|\/]\s*|\s{2,}|\s+and\s+/).filter(Boolean).length>=3&&l===l.toLowerCase());
-    if(fl>=0){d.notes=lines[fl].split(/\s*[,·•|\/]\s*|\s{2,}|\s+and\s+/).filter(Boolean).join(", ");used.add(fl)}
-  }
-  const known=knownRoasters();
-  const ri=lines.findIndex(l=>known.some(r=>{const a=l.toLowerCase(),b=r.toLowerCase();return a.includes(b)||b.split(/\s+/)[0].length>3&&a.split(/\s+/).includes(b.split(/\s+/)[0])}));
-  if(ri>=0){const l=lines[ri].toLowerCase();d.roaster=known.find(r=>l.includes(r.toLowerCase()))||known.find(r=>l.split(/\s+/).includes(r.toLowerCase().split(/\s+/)[0]));used.add(ri)}
-  else{const rj=lines.findIndex((l,i)=>i<3&&!used.has(i)&&/\b(roasters?|roastery|roasting|coffee|kaffe|koffie|caf[eé])\b/i.test(l)&&l.length<=40);
-    if(rj>=0){d.roaster=tidy(lines[rj]);used.add(rj);unsure.push("roaster")}}
-  const nm=lines.find((l,i)=>!used.has(i)&&/[a-z]/i.test(l)&&l.length>=2&&l.length<=40&&!/roast|www\.|http|@|net wt|weight|origin|process|variety|altitude|masl|producer|farm:|region/i.test(l));
-  if(nm)d.name=tidy(nm);
-  if(d.origin)d.origin=tidy(d.origin);
-  return {d,unsure};
-}
-/* Closing the reader is remembered, for someone who mostly types. The link brings it back. */
-function showScan(on){$("#scanBox").hidden=!on;$("#scanOpen").hidden=on}
-$("#scanClose").addEventListener("click",()=>{lsSet("scanClosed",true);showScan(false);setTimeout(()=>$("#bName").focus(),0)});
-$("#scanOpen").addEventListener("click",()=>{lsSet("scanClosed",false);showScan(true)});
-
-/* The photo is read on the phone by Tesseract, a free open source reader. The first use downloads
-   it (about 4 MB), after that it is kept on the phone. */
-const OCR_URL="https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.esm.min.js";
-let ocrWorker=null,ocrBusy=false;
-async function getOcr(){
-  if(ocrWorker)return ocrWorker;
-  const T=await import(OCR_URL);
-  const create=T.createWorker||(T.default&&T.default.createWorker);
-  ocrWorker=await create("eng",1,{logger:m=>{
-    if(m.status==="recognizing text")scanStatus(`Reading the label, ${Math.round((m.progress||0)*100)}%`);
-    else if(/loading|initiali/.test(m.status||""))scanStatus("Getting the reader ready. The first time takes a little longer.");
-  }});
-  return ocrWorker;
-}
-function preparePhoto(file){
-  return new Promise((ok,no)=>{
-    const url=URL.createObjectURL(file),img=new Image();
-    img.onload=()=>{
-      const k=Math.min(1,2000/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement("canvas");
-      c.width=Math.round(img.naturalWidth*k);c.height=Math.round(img.naturalHeight*k);
-      const g=c.getContext("2d");g.drawImage(img,0,0,c.width,c.height);
-      /* grey and stretch the contrast, which helps the reader with glossy bags */
-      const px=g.getImageData(0,0,c.width,c.height),d=px.data;let lo=255,hi=0;
-      for(let i=0;i<d.length;i+=4){const y=(d[i]*.299+d[i+1]*.587+d[i+2]*.114)|0;d[i]=y;if(y<lo)lo=y;if(y>hi)hi=y}
-      const span=Math.max(1,hi-lo);
-      for(let i=0;i<d.length;i+=4){const v=Math.round((d[i]-lo)*255/span);d[i]=d[i+1]=d[i+2]=v}
-      g.putImageData(px,0,0);URL.revokeObjectURL(url);ok(c);
-    };
-    img.onerror=()=>{URL.revokeObjectURL(url);no(new Error("decode"))};
-    img.src=url;
-  });
-}
-$("#scanFile").addEventListener("change",async e=>{
-  const f=e.target.files&&e.target.files[0];if(!f||ocrBusy)return;
-  ocrBusy=true;
-  try{
-    const pv=$("#scanPreview");pv.src=URL.createObjectURL(f);pv.hidden=false;
-    let canvas;try{canvas=await preparePhoto(f)}catch(err){scanStatus("That photo could not be opened. Try another.");return}
-    scanStatus("Getting the reader ready. The first time takes a little longer.");
-    let w;try{w=await getOcr()}catch(err){scanStatus("The reader could not be downloaded. It needs the internet the first time only. Try again on wifi.");return}
-    const {data}=await w.recognize(canvas);
-    const r=parseLabelText((data&&data.text)||"");
-    applyLabel(r.d,r.unsure);
-  }catch(err){scanStatus("Something went wrong reading the photo. Try again, closer and straight on.")}
-  finally{ocrBusy=false;$("#scanFile").value=""}
-});
 $("#beanCancel").addEventListener("click",()=>{$("#beanEditor").hidden=true});
 $("#beanForm").addEventListener("submit",async e=>{
   e.preventDefault();
@@ -1946,7 +1897,7 @@ function plural(n,w){return n+" "+w+(n===1?"":"s")}
 function csvCell(v){v=v==null?"":Array.isArray(v)?v.join("; "):String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
 function backupNote(){
   const t=lsGet("lastBackup",0);
-  $("#backupNote").textContent=!brews.length?"Nothing logged yet.":t?`Last backup ${plural(Math.floor((Date.now()-t)/864e5),"day")} ago. ${plural(brews.length,"brew")} and ${plural(beans.length,"coffee")} on this phone.`:`Not backed up yet. ${plural(brews.length,"brew")} saved only on this phone.`;
+  $("#backupNote").textContent=!brews.length?"Nothing logged yet.":t?`Last backup ${plural(Math.floor((Date.now()-t)/864e5),"day")} ago. ${plural(brews.length,"brew")}, ${plural(beans.length,"coffee")}${myRecipes.length?` and ${plural(myRecipes.length,"recipe")}`:""} on this phone.`:`Not backed up yet. ${plural(brews.length,"brew")} saved only on this phone.`;
 }
 $("#exportBtn").addEventListener("click",async()=>{
   const cols=["date","device","recipe","coffee","roaster","origin","variety","roast","process","roastDate","daysOffRoast","clicks","dose","water","ratio","temp","time","extraction","strength","sweet","acid","body","score","flavours","notes","next"];
@@ -1958,7 +1909,7 @@ $("#exportBtn").addEventListener("click",async()=>{
   await offerFile(`brew-log-${today()}.csv`,cols.join(",")+"\n"+rows.join("\n"),"text/csv");
 });
 $("#backupBtn").addEventListener("click",async()=>{
-  const data=JSON.stringify({app:"press-switch-log",version:1,exported:new Date().toISOString(),brews,beans},null,1);
+  const data=JSON.stringify({app:"press-switch-log",version:1,exported:new Date().toISOString(),brews,beans,recipes:myRecipes},null,1);
   if(await offerFile(`brew-log-backup-${today()}.json`,data,"application/json")){lsSet("lastBackup",Date.now());backupNote();toast("Backup ready")}
 });
 $("#restoreBtn").addEventListener("click",()=>$("#restoreFile").click());
@@ -1971,12 +1922,14 @@ $("#restoreFile").addEventListener("change",async e=>{
     const mB=new Map(brews.map(x=>[x.id,x]));inB.forEach(x=>mB.set(x.id,x));
     const mC=new Map(beans.map(x=>[x.id,x]));inC.forEach(x=>mC.set(x.id,x));
     brews=[...mB.values()];beans=[...mC.values()];lsSet("brews-local",brews);lsSet("beans-local",beans);
-    renderAll();resetForm(true);backupNote();toast(`Restored ${plural(inB.length,"brew")} and ${plural(inC.length,"coffee")}`);
+    const inR=Array.isArray(d)?[]:(d.recipes||[]).filter(x=>x&&x.id&&Array.isArray(x.steps));
+    if(inR.length){const mR=new Map(myRecipes.map(x=>[x.id,x]));inR.forEach(x=>mR.set(x.id,x));myRecipes=[...mR.values()];lsSet("recipes-local",myRecipes);refreshRecipes()}
+    renderAll();resetForm(true);backupNote();toast(inR.length?`Restored ${plural(inB.length,"brew")}, ${plural(inC.length,"coffee")} and ${plural(inR.length,"recipe")}`:`Restored ${plural(inB.length,"brew")} and ${plural(inC.length,"coffee")}`);
   }catch(err){toast("That file is not a Press and Switch Log backup.")}
 });
 
 /* ---------- boot ---------- */
-try{localStorage.removeItem("claudeKey")}catch(e){}
+try{["claudeKey","scanClosed"].forEach(k=>localStorage.removeItem(k))}catch(e){}
 migrateRoasters();
 const splitCount=migrateBeanIds();
 pick.value=cur.id;renderBrew();resetForm(true);renderAll();
