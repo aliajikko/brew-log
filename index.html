@@ -453,6 +453,14 @@ ol.steps li.active{border-radius:12px}
         <input type="file" id="restoreFile" accept="application/json,.json" hidden>
       </div>
     </div>
+    <div class="box panel" id="syncBox">
+      <div><h3>Cloud sync <span class="muted" style="font-weight:500;font-size:14px">optional</span></h3><div class="hint" id="syStatus" style="margin-top:6px"></div></div>
+      <div class="f"><label for="syUrl">Sync address</label><input id="syUrl" inputmode="url" autocapitalize="off" spellcheck="false"></div>
+      <div class="f"><label for="syKey">Sync key (keep this private, it unlocks your log)</label><input id="syKey" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <div class="row" style="margin-top:6px"><button class="btn small" id="syNew" type="button">New key</button><button class="btn small" id="syShow" type="button">Show</button><button class="btn small" id="syCopy" type="button">Copy</button></div></div>
+      <div class="row"><button class="btn primary" id="syToggle" type="button">Turn sync on</button><button class="btn" id="syNow" type="button" hidden>Sync now</button></div>
+      <p class="muted" style="margin:0;font-size:13px">With sync on, every change is saved to your own Cloudflare account a few seconds later, and the app checks for newer data whenever you open it. Brews from two phones are merged, nothing is overwritten. To use a second device, enter the same address and key there. The key is never included in backups.</p>
+    </div>
   </section>
 
   <!-- BEANS -->
@@ -774,7 +782,8 @@ const ratio = (d,w)=>d&&w?"1:"+(w/d).toFixed(1).replace(/\.0$/,""):"–";
 const parseTime = v=>{if(!v)return null;const m=String(v).trim().match(/^(\d+)[:.,](\d{2})$/);if(m)return +m[1]*60+ +m[2];const n=parseFloat(v);return isNaN(n)?null:n};
 function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,2200)}
 function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
-function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}if(SYNCED_KEYS.includes(k)&&!syncApplying&&typeof syncChanged==="function")syncChanged()}
+const SYNCED_KEYS=["brews-local","beans-local","recipes-local","sync-deleted"];let syncApplying=false;
 function stats(items){return `<div class="stats">${items.map(([k,v])=>`<div class="stat"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join("")}</div>`}
 function recipeLabel(r){return r.mine?(r.author&&r.author!=="Your recipe"?`${r.name}, from ${r.author}`:r.name):`${r.author}, ${r.name}`}
 /* the same name with the important part in bold, for the lines under the pickers */
@@ -813,7 +822,7 @@ async function saveBean(obj){
 }
 async function deleteBrew(id){
   if(db){await db.collection("brews").doc(id).delete()}
-  else{brews=brews.filter(b=>b.id!==id);lsSet("brews-local",brews);renderAll()}
+  else{bury(id);brews=brews.filter(b=>b.id!==id);lsSet("brews-local",brews);renderAll()}
 }
 
 /* ---------- recipes tab ---------- */
@@ -927,7 +936,7 @@ $("#rDelete").addEventListener("click",()=>{
   const r=recipeEditing;if(!r)return;
   const n=brews.filter(b=>b.recipe===r.id).length;
   if(!confirm(n?`Delete ${r.name}? ${plural(n,"logged brew")} used it. Those stay in your log, shown as your own recipe.`:`Delete ${r.name}? This cannot be undone.`))return;
-  myRecipes=myRecipes.filter(x=>x.id!==r.id);lsSet("recipes-local",myRecipes);
+  bury(r.id);myRecipes=myRecipes.filter(x=>x.id!==r.id);lsSet("recipes-local",myRecipes);
   $("#recipeEditor").hidden=true;refreshRecipes();renderAll();toast("Recipe deleted");
 });
 
@@ -2098,6 +2107,79 @@ $("#restoreFile").addEventListener("change",async e=>{
     renderAll();resetForm(true);backupNote();toast(inR.length?`Restored ${plural(inB.length,"brew")}, ${plural(inC.length,"coffee")} and ${plural(inR.length,"recipe")}`:`Restored ${plural(inB.length,"brew")} and ${plural(inC.length,"coffee")}`);
   }catch(err){toast("That file is not a Press and Switch Log backup.")}
 });
+
+/* ---------- cloud sync, through your own Cloudflare Worker ----------
+   Same Worker design as the fitness app: GET returns the stored log, PUT replaces it, and the first key
+   to write owns it. Here every sync merges by id first, so two phones never overwrite each other.
+   Deleted ids are remembered so a deletion on one phone is not brought back by the other. */
+const SYNC_URL_DEFAULT="https://brew-log-sync.ali-ajeel-rasheed.workers.dev/";
+let sync=Object.assign({url:SYNC_URL_DEFAULT,key:"",on:false,last:0},lsGet("sync",{}));
+let syncT=null,syncBusy=false;
+function syncSave(){try{localStorage.setItem("sync",JSON.stringify(sync))}catch(e){}}
+function syncOn(){return !!(sync.on&&sync.url&&sync.key)}
+function bury(id){const d=lsGet("sync-deleted",[]);if(!d.includes(id)){d.push(id);lsSet("sync-deleted",d)}}
+function localData(){return {app:"press-switch-log",version:1,updated:lsGet("sync-updated",0),brews,beans,recipes:myRecipes,deleted:lsGet("sync-deleted",[])}}
+function syncChanged(){try{lsSetRaw("sync-updated",Date.now());if(syncOn()){clearTimeout(syncT);syncT=setTimeout(syncNow,4000)}}catch(e){} /* writes before sync has loaded just stamp nothing */}
+function lsSetRaw(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function mergeLogs(older,newer){
+  const dead=new Set([...(older.deleted||[]),...(newer.deleted||[])]);
+  const m=(a,b)=>{const map=new Map();(a||[]).forEach(x=>x&&x.id&&map.set(x.id,x));(b||[]).forEach(x=>x&&x.id&&map.set(x.id,x));return [...map.values()].filter(x=>!dead.has(x.id))};
+  return {brews:m(older.brews,newer.brews),beans:m(older.beans,newer.beans),recipes:m(older.recipes,newer.recipes),deleted:[...dead]};
+}
+const sig=d=>JSON.stringify(["brews","beans","recipes"].map(k=>(d[k]||[]).slice().sort((a,b)=>String(a.id).localeCompare(String(b.id)))).concat([(d.deleted||[]).slice().sort()]));
+function paintSync(msg,bad){
+  const el=$("#syStatus");if(!el)return;
+  el.style.background=bad?"var(--press-soft)":"";
+  el.innerHTML=syncOn()?`<b>Sync is on.</b> ${esc(msg||"")}${sync.last?` Last synced ${esc(new Date(sync.last).toLocaleString(undefined,{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}))}.`:""}`
+    :`Sync is off. Your log is only on this phone.${msg?" "+esc(msg):""}`;
+  $("#syToggle").textContent=syncOn()?"Turn sync off":"Turn sync on";$("#syNow").hidden=!syncOn();
+  setSync(true,syncOn()?(bad?"Sync needs a look":"Synced to your Cloudflare"):"Saved on this phone");
+}
+async function syncCall(method,body){
+  const r=await fetch(sync.url,{method,headers:{"Authorization":"Bearer "+sync.key,"Content-Type":"application/json"},body,cache:"no-store"});
+  if(!r.ok)throw new Error(r.status===403?"this key does not match the one that owns the cloud copy":r.status===401?"the key is missing or too short":"server replied "+r.status);
+  return method==="GET"?r.json():null;
+}
+async function syncNow(){
+  if(!syncOn()||syncBusy)return;
+  if(typeof running!=="undefined"&&running){clearTimeout(syncT);syncT=setTimeout(syncNow,30000);return} /* never during a timed brew */
+  syncBusy=true;clearTimeout(syncT);syncT=null;
+  try{
+    const remote=await syncCall("GET"),local=localData();
+    const ok=remote&&Array.isArray(remote.brews);
+    const merged=ok?((remote.updated||0)>(local.updated||0)?mergeLogs(local,remote):mergeLogs(remote,local)):mergeLogs({},local);
+    if(sig(merged)!==sig(local)){
+      syncApplying=true;
+      try{brews=merged.brews;beans=merged.beans;myRecipes=merged.recipes;
+        lsSet("brews-local",brews);lsSet("beans-local",beans);lsSet("recipes-local",myRecipes);lsSet("sync-deleted",merged.deleted);
+        lsSetRaw("sync-updated",Math.max(remote&&remote.updated||0,local.updated||0));}
+      finally{syncApplying=false}
+      syncMyRecipes();fillBrewPick();renderAll();
+    }
+    if(!ok||sig(merged)!==sig(remote)){
+      const stamp=Math.max(Date.now(),lsGet("sync-updated",0));lsSetRaw("sync-updated",stamp);
+      await syncCall("PUT",JSON.stringify(Object.assign(localData(),{updated:stamp})));
+    }
+    sync.last=Date.now();syncSave();paintSync(ok&&sig(merged)===sig(remote)?"Everything is up to date.":"Saved to the cloud.");
+  }catch(e){paintSync(`Could not reach the cloud (${e.message}). It will try again on your next change.`,true)}
+  finally{syncBusy=false}
+}
+function newKey(){const a=new Uint8Array(32);crypto.getRandomValues(a);return btoa(String.fromCharCode.apply(null,a)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
+$("#syUrl").value=sync.url||SYNC_URL_DEFAULT;$("#syKey").value=sync.key||"";
+$("#syShow").addEventListener("click",()=>{const k=$("#syKey");k.type=k.type==="password"?"text":"password";$("#syShow").textContent=k.type==="password"?"Show":"Hide"});
+$("#syNew").addEventListener("click",()=>{if($("#syKey").value&&!confirm("Replace the key in the box with a new one? Only do this if you have not used the old one yet."))return;$("#syKey").value=newKey();$("#syKey").type="text";$("#syShow").textContent="Hide"});
+$("#syCopy").addEventListener("click",async()=>{try{await navigator.clipboard.writeText($("#syKey").value);toast("Key copied")}catch(e){$("#syKey").type="text";$("#syKey").select()}});
+$("#syNow").addEventListener("click",()=>{paintSync("Syncing.");syncNow()});
+$("#syToggle").addEventListener("click",async()=>{
+  if(syncOn()){sync.on=false;syncSave();paintSync();return}
+  const url=$("#syUrl").value.trim(),key=$("#syKey").value.trim();
+  if(!/^https:\/\//.test(url)){paintSync("The address must start with https://.",true);return}
+  if(!/^[A-Za-z0-9_-]{32,80}$/.test(key)){paintSync("Tap New key first, then copy the key somewhere safe.",true);return}
+  Object.assign(sync,{url,key,on:true});syncSave();paintSync("Syncing.");await syncNow();
+});
+paintSync();
+if(syncOn())setTimeout(syncNow,1500);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&syncOn())setTimeout(syncNow,800)});
 
 /* ---------- boot ---------- */
 try{["claudeKey","scanClosed"].forEach(k=>localStorage.removeItem(k))}catch(e){}
