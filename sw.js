@@ -1,4 +1,4 @@
-const CACHE = "brewlog-v16";
+const CACHE = "brewlog-v17";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 // cache: "reload" skips the browser's own 10 minute copy, so a new version never stores the old page
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS.map(u => new Request(u, { cache: "reload" }))))); self.skipWaiting(); });

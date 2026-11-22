@@ -244,6 +244,10 @@ nav.tabs{position:fixed;top:auto;left:50%;bottom:calc(12px + env(safe-area-inset
 ol.steps li.active{border-radius:12px}
 .ctar span{border-radius:8px}
 .bar{height:7px;border-radius:999px}
+.plan{background:var(--switch-soft);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.plan .ptop{font-size:17px;font-weight:700;letter-spacing:-.01em}
+.plan .pwhy{color:var(--muted);font-size:13px;line-height:1.45}
+.plan .pmove{background:var(--glass-hi);border-radius:12px;padding:8px 10px}
 .xbtn{flex:none;width:32px;height:32px;border-radius:999px;border:1px solid var(--edge);background:var(--glass-hi);color:var(--muted);font-size:14px;line-height:1;display:grid;place-items:center;cursor:pointer;padding:0}
 .rsteps{display:flex;flex-direction:column;gap:6px}
 .rstep{display:grid;grid-template-columns:68px minmax(0,1fr) 32px;grid-template-areas:"t a x" ". v .";gap:6px;align-items:center;padding-bottom:6px;border-bottom:1px solid var(--line)}
@@ -297,6 +301,8 @@ ol.steps li.active{border-radius:12px}
         <select id="brewPick"></select>
         <div class="beaninfo" id="brewName"></div>
       </div>
+      <div class="f"><label for="brewBean">For which coffee</label><select id="brewBean"></select></div>
+      <div class="plan" id="brewPlan" hidden></div>
       <div id="brewStats"></div>
       <div class="row between">
         <div class="stepper">
@@ -395,7 +401,10 @@ ol.steps li.active{border-radius:12px}
         <div class="f"><label for="fClicks">C5 clicks</label><input id="fClicks" type="number" inputmode="decimal" step="0.5" min="0" max="48"></div>
         <div class="f"><label for="fDose">Coffee (g)</label><input id="fDose" type="number" inputmode="decimal" step="0.1" min="0"></div>
         <div class="f"><label for="fWater">Water (g)</label><input id="fWater" type="number" inputmode="decimal" step="1" min="0"></div>
-        <div class="f"><label for="fTemp">Water temp (°C)</label><input id="fTemp" type="number" inputmode="decimal" step="1" min="0" max="100"></div>
+        <div class="f"><label for="fTemp" id="fTempLbl">Water temp (°C)</label><input id="fTemp" type="number" inputmode="decimal" step="1" min="0" max="100">
+          <button type="button" class="linkbtn" id="fTemp2Add" style="align-self:flex-start">I used two temperatures</button></div>
+        <div class="f" id="fTemp2Wrap" hidden><label for="fTemp2">Second temp (°C)</label><input id="fTemp2" type="number" inputmode="decimal" step="1" min="0" max="100">
+          <button type="button" class="linkbtn" id="fTemp2Rm" style="align-self:flex-start">Just one temperature</button></div>
         <div class="f"><label for="fTime">Total time (m:ss)</label><input id="fTime" placeholder="3:00"></div>
         <div class="f wide"><label id="strLbl">Strength</label>
           <div class="opts" id="fStrength" role="group" aria-labelledby="strLbl"><button type="button" class="opt" data-v="weak" aria-pressed="false">Weak</button><button type="button" class="opt" data-v="right" aria-pressed="false">Right</button><button type="button" class="opt" data-v="strong" aria-pressed="false">Strong</button></div>
@@ -549,10 +558,11 @@ ol.steps li.active{border-radius:12px}
     </div>
     <div class="box panel">
       <h3>How the estimates in this log were made</h3>
-      <p style="margin:0">Each recipe's own grind was converted to a burr gap, then divided by 31 µm. A Comandante steps about 30 µm from burr contact too, so a Comandante click count carries across almost one to one. Recipes that name only a style were placed on this scale: fine about 450 µm (14 clicks), medium fine about 600 µm (19), medium about 750 µm (24), medium coarse about 900 µm (29), coarse about 1100 µm (35).</p>
-      <p style="margin:0"><strong>One anchor disagrees.</strong> The Coffee Chronicler grinds his Switch recipe at 22 to 24 Comandante clicks, but says his own C5 needed 15 to 17 for pour over, which is 5 to 7 clicks finer than this conversion. So if a recipe tastes thin and drains fast at the click number shown here, go finer rather than assuming the coffee is at fault.</p>
-      <p style="margin:0"><strong>The buffer shifts everything.</strong> These numbers assume the burrs close at click 0. Timemore's 3 click buffer suggests contact actually sits near click 3, which would make every estimate here 3 clicks fine. That is the second reason to treat them as a starting point rather than a setting.</p>
-      <p class="muted" style="margin:0;font-size:13px">Conversions from a 1Zpresso ZP6, a K-Ultra, a Kinu or a café EK43 are the least reliable, since their step sizes and zero points are not comparable. Those recipes are placed by description.</p>
+      <p style="margin:0">Grinders cannot be compared click for click. The C5 and the Comandante both move the burrs about 30 µm per click, but the burr shape decides how big the grounds come out. Honest Coffee Guide puts both on one micron scale: the Comandante spans 0 to 1090 µm over 40 clicks, about 27 µm of grind per click, and the C5 spans 0 to 950 µm over 48 clicks, about 20 µm per click. So <strong>one Comandante click is worth about 1.4 C5 clicks</strong>. A recipe written at Comandante 22 lands near C5 30.</p>
+      <p style="margin:0">Recipes that only name a style were placed on the C5's own ranges from the table below: fine near espresso 16 to 20 clicks, medium fine 26 to 31, medium 32 to 37, medium coarse 38 to 42, coarse 43 to 48.</p>
+      <p style="margin:0"><strong>The dial is numbers, not clicks.</strong> The C5 dial runs 0 to 15 in one turn, with 3 clicks per number. Reviews that say pour over at 10 to 14 mean numbers, which is 30 to 42 clicks. Earlier versions of this log read one of those as clicks and came out too fine.</p>
+      <p style="margin:0"><strong>Your own cups outrank all of this.</strong> Every estimate here is a starting point, not a setting. Once you have logged a recipe, the Brew tab starts from your best cup of it, moved for the coffee's roast and process.</p>
+      <p class="muted" style="margin:0;font-size:13px">Least reliable: recipes set on unusual burrs, such as the 2025 AeroPress champion's Tigershark burrs, and conversions from a 1Zpresso ZP6, Kinu or café EK43, whose scales are not comparable. Sources: Honest Coffee Guide C5 Pro, Comandante C40 and K-Ultra charts, Coffee Chronicler's C5 review, Pull and Pour's C5 review.</p>
     </div>
     <div class="box panel">
       <h3>Adjusting from the cup</h3>
@@ -576,138 +586,138 @@ ol.steps li.active{border-radius:12px}
 const R = [
 /* AeroPress experts */
 {id:"hoffmann-ultimate-ap", dev:"ap", kind:"expert", name:"The Ultimate AeroPress", author:"James Hoffmann", cred:"World Barista Champion 2007",
- dose:11, water:200, temp:"Just off the boil", grind:"Medium fine", c5:"18 to 20", setup:"Standard (not inverted). One paper filter, not rinsed.",
+ dose:11, water:200, temp:"Just off the boil", grind:"Medium fine", c5:"26 to 31", setup:"Standard (not inverted). One paper filter, not rinsed.",
  steps:[{t:0,a:"Pour all 200 g, wet every ground. Insert plunger about 1 cm to hold the vacuum."},{t:120,a:"Swirl gently."},{t:150,a:"Press gently, about 30 seconds, all the way."},{t:180,a:"Done."}],
  notes:"Parameters from secondary write-ups of his video, which the research could not open directly. One write-up describes the grind as much finer, close to espresso.",
  src:"https://www.youtube.com/watch?v=j6VlT_jUVPc", verified:false},
 {id:"kasuya-ap", dev:"ap", kind:"expert", name:"AeroPress", author:"Tetsu Kasuya", cred:"World Brewers Cup Champion 2016",
- dose:30, water:120, bypass:30, temp:"80 to 82 °C", grind:"Coarse", c5:"26 to 28", setup:"Inverted. AeroPress paper filter.",
+ dose:30, water:120, bypass:30, temp:"80 to 82 °C", grind:"Coarse", c5:"43 to 48", setup:"Inverted. AeroPress paper filter.",
  steps:[{t:0,a:"Pour 120 g, stir for a few seconds."},{t:30,a:"Cap on and flip."},{t:70,a:"Press, up to 20 seconds."},{t:90,a:"Add 30 g hot water."}],
  notes:"From his company Philocoffea. A widely shared variant uses 28 Comandante clicks, stirs 10 times at 0:30, flips at 1:00 and dilutes with 80 to 100 g. That version is unverified.",
  src:"https://en.philocoffea.com/blogs/blog/tetsu-kasuya-aeropress-coffee-recipe", verified:true},
 {id:"chronicler-light-ap", dev:"ap", kind:"expert", name:"Light roast AeroPress", author:"The Coffee Chronicler", cred:"Asser Christensen, Q Arabica Grader",
- dose:17, water:260, temp:"Near boiling", grind:"Fine, near espresso", c5:"10 to 12", setup:"Standard. Aesir filter or two paper filters, rinsed.",
+ dose:17, water:260, temp:"Near boiling", grind:"Fine, near espresso", c5:"16 to 20", setup:"Standard. Aesir filter or two paper filters, rinsed.",
  steps:[{t:0,a:"Pour 260 g, plunger in. No stirring."},{t:50,a:"Press about 20 seconds. Stop before the hiss."},{t:70,a:"Done."}],
  notes:"Short, hot and fine, built for light roasts.",
  src:"https://coffeechronicler.com/aeropress-recipes/", verified:true},
 {id:"chronicler-long-ap", dev:"ap", kind:"expert", name:"The Long Brew", author:"The Coffee Chronicler", cred:"Asser Christensen, Q Arabica Grader",
- dose:14, water:250, temp:"93 °C", grind:"Coarse", c5:"32 to 36", setup:"Inverted. One paper filter, rinsed.",
+ dose:14, water:250, temp:"93 °C", grind:"Coarse", c5:"43 to 48", setup:"Inverted. One paper filter, rinsed.",
  steps:[{t:0,a:"Pour 250 g."},{t:240,a:"Stir 5 times."},{t:720,a:"Flip and press slowly."}],
  notes:"A 12 minute steep. Forgiving and heavy bodied.",
  src:"https://coffeechronicler.com/ultimate-guide-to-the-aeropress/", verified:true},
 {id:"hedrick-ap", dev:"ap", kind:"expert", name:"A Very Good AeroPress", author:"Lance Hedrick", cred:"Extra, widely cited",
- dose:15, water:250, temp:"92 °C light, 88 °C medium, 82 to 84 °C dark", grind:"Medium fine, start coarser", c5:"18 to 20", setup:"Standard. Paper filter. Use 16 g for medium and 17 g for dark roasts.",
+ dose:15, water:250, temp:"92 °C light, 88 °C medium, 82 to 84 °C dark", grind:"Medium fine, start coarser", c5:"28 to 33", setup:"Standard. Paper filter. Use 16 g for medium and 17 g for dark roasts.",
  steps:[{t:0,a:"Level the bed. Pour a little slowly, swirl, bloom."},{t:45,a:"Fill to 250 g. Plunger in, swirl."},{t:120,a:"Press gently. Stop before the hiss."}],
  notes:"From a user submitted summary of his video. Unverified.",
  src:"https://www.youtube.com/watch?v=CafyJ2p0Bgs", verified:false},
 
 /* AeroPress champions */
 {id:"wac-2025", dev:"ap", kind:"champ", name:"World AeroPress Champion 2025", author:"Némo Pop", cred:"Australia",
- dose:18, water:100, bypass:70, temp:"84 °C, bypass at 50 °C", grind:"Coarse, fines sifted out (Comandante 31 clicks, Tigershark burrs)", c5:"29 to 31", setup:"Standard with Flow Control cap. Two paper filters. Put 70 g of 50 °C water in the carafe first.",
+ dose:18, water:100, bypass:70, temp:"84 °C, bypass at 50 °C", grind:"Coarse, fines sifted out (Comandante 31 clicks, Tigershark burrs)", c5:"27 to 31", setup:"Standard with Flow Control cap. Two paper filters. Put 70 g of 50 °C water in the carafe first.",
  steps:[{t:0,a:"Pour 100 g at 84 °C."},{t:25,a:"Stir north south north south, then west east west east."},{t:50,a:"Press gently, about 20 seconds, into the bypass water."},{t:70,a:"Done."}],
  notes:"Probably the \"Nemo\" you follow. Competition water was 125 ppm. The sifting is optional at home.",
  src:"https://worldaeropresschampionship.com/pages/recipes", verified:true},
 {id:"wac-2024", dev:"ap", kind:"champ", name:"World AeroPress Champion 2024", author:"George Stanica", cred:"Romania",
- dose:18, water:100, bypass:"About 55 g hot, then 20 to 30 g cool", temp:"96 °C", grind:"Medium coarse (Comandante 58 Red Clix, about 870 µm)", c5:"27 to 29", setup:"Inverted. One Aesir filter, rinsed. Water about 85 to 90 ppm.",
+ dose:18, water:100, bypass:"About 55 g hot, then 20 to 30 g cool", temp:"96 °C", grind:"Medium coarse (Comandante 58 Red Clix, about 870 µm)", c5:"42 to 46", setup:"Inverted. One Aesir filter, rinsed. Water about 85 to 90 ppm.",
  steps:[{t:0,a:"Pour 50 g slowly over 5 to 6 seconds."},{t:30,a:"Pour 50 g more. Light stir north south east west for 10 seconds."},{t:80,a:"Cap on, push the air out. Gentle swirl."},{t:95,a:"Flip and press over 30 to 40 seconds, to 76 to 79 g."},{t:135,a:"Top up with hot water to 130 to 135 g, then 20 to 30 g room temperature water."}],
  notes:"aeropress.com lists a different home version: upright, 93 °C, 225 g, pressed at 1:30.",
  src:"https://worldaeropresschampionship.com/pages/recipes", verified:true},
 {id:"wac-2023", dev:"ap", kind:"champ", name:"World AeroPress Champion 2023", author:"Tay Wipvasutt", cred:"Thailand",
- dose:18, water:100, bypass:55, temp:"89 °C", grind:"Medium coarse (1Zpresso ZP6)", c5:"25 to 27", setup:"Inverted. One paper filter, rinsed. Start with 16 g, keep 2 g aside.",
+ dose:18, water:100, bypass:55, temp:"89 °C", grind:"Medium coarse (1Zpresso ZP6)", c5:"38 to 42", setup:"Inverted. One paper filter, rinsed. Start with 16 g, keep 2 g aside.",
  steps:[{t:0,a:"16 g coffee in, pour to 100 g."},{t:30,a:"Stir 5 seconds with one side of a chopstick."},{t:45,a:"Add the remaining 2 g coffee."},{t:55,a:"Stir 5 seconds."},{t:85,a:"Push the air out, cap on, flip."},{t:95,a:"Press about 30 seconds, to about 75 g."},{t:125,a:"Room temperature water to 115 g, then hot water to about 155 g."}],
  notes:"Adding coffee mid steep is the unusual part.",
  src:"https://worldaeropresschampionship.com/pages/recipes", verified:true},
 {id:"wac-2022", dev:"ap", kind:"champ", name:"World AeroPress Champion 2022", author:"Jibbi Little", cred:"Australia",
- dose:18, water:94, bypass:"to 150 g", temp:"90 °C", grind:"Coarse, fines sifted out", c5:"27 to 29", setup:"Inverted. One AeroPress paper filter, rinsed.",
+ dose:18, water:94, bypass:"to 150 g", temp:"90 °C", grind:"Coarse, fines sifted out", c5:"43 to 48", setup:"Inverted. One AeroPress paper filter, rinsed.",
  steps:[{t:0,a:"Pour 94 g. Stir gently 35 times."},{t:80,a:"Cap on, push the air out."},{t:90,a:"Flip."},{t:100,a:"Press 30 seconds, to 58 to 64 g concentrate."},{t:130,a:"Dilute with 90 °C water to 150 g."}],
  notes:"Target TDS 1.30 to 1.35. Optional coffee ice balls in the cup.",
  src:"https://worldaeropresschampionship.com/pages/recipes", verified:true},
 {id:"wac-2021", dev:"ap", kind:"champ", name:"World AeroPress Champion 2021", author:"Tuomas Merikanto", cred:"Finland",
- dose:18, water:200, temp:"80 °C", grind:"Medium", c5:"22 to 24", setup:"Inverted. Two paper filters, rinsed.",
+ dose:18, water:200, temp:"80 °C", grind:"Medium", c5:"32 to 37", setup:"Inverted. Two paper filters, rinsed.",
  steps:[{t:0,a:"Pour 50 g."},{t:10,a:"Stir very gently back and forth 3 times."},{t:15,a:"Pour to 200 g by 0:30."},{t:50,a:"Stir 3 more times."},{t:60,a:"Push the air out, cap on."},{t:100,a:"Flip and press, finish by 2:00."},{t:120,a:"Swirl to cool for 30 seconds, then pour from height into another cup."}],
  notes:"Won the first virtual final. No bypass water.",
  src:"https://worldaeropresschampionship.com/pages/recipes", verified:true},
 {id:"wac-2019", dev:"ap", kind:"champ", name:"World AeroPress Champion 2019", author:"Wendelien van Bunnik", cred:"Netherlands",
- dose:30, water:100, bypass:"100 to 120", temp:"92 °C", grind:"Medium coarse", c5:"26 to 28", setup:"Inverted. Aesir filter, rinsed. Soft water (30 ppm).",
+ dose:30, water:100, bypass:"100 to 120", temp:"92 °C", grind:"Medium coarse", c5:"38 to 42", setup:"Inverted. Aesir filter, rinsed. Soft water (30 ppm).",
  steps:[{t:0,a:"Pour 100 g in 10 seconds."},{t:10,a:"Stir firmly 20 times in 10 seconds."},{t:20,a:"Cap on, gently press out the air."},{t:40,a:"Flip and press everything out, about 60 g."},{t:60,a:"Add 100 g water, more to taste. Cool to about 60 °C by stirring."}],
  notes:"The whole brew is one minute.",
  src:"https://worldaeropresschampionship.com/pages/recipes", verified:true},
 {id:"wac-2018", dev:"ap", kind:"champ", name:"World AeroPress Champion 2018", author:"Carolina Garay", cred:"USA",
- dose:34.9, water:100, bypass:100, temp:"85 °C", grind:"Medium coarse", c5:"28 to 30", setup:"Inverted. Paper filter, rinsed hot.",
+ dose:34.9, water:100, bypass:100, temp:"85 °C", grind:"Medium coarse", c5:"38 to 42", setup:"Inverted. Paper filter, rinsed hot.",
  steps:[{t:0,a:"Pour 100 g over 30 seconds."},{t:30,a:"Stir vigorously for 30 seconds."},{t:60,a:"Cap, flip, press for 30 seconds into a cool server."},{t:90,a:"Add 60 g water at 85 °C and 40 g at room temperature."}],
  notes:"aeropress.com's version says fine (Comandante 15 clicks) and two filters, which conflicts with the competition grind.",
  src:"https://worldaeropresschampionship.com/pages/recipes", verified:true},
 {id:"wac-2017", dev:"ap", kind:"champ", name:"World AeroPress Champion 2017", author:"Paulina Miczka", cred:"England",
- dose:35, water:150, bypass:"160 to 200", temp:"84 °C", grind:"Medium coarse, about V60", c5:"24 to 26", setup:"Inverted. Paper filter, pre wet.",
+ dose:35, water:150, bypass:"160 to 200", temp:"84 °C", grind:"Medium coarse, about V60", c5:"30 to 35", setup:"Inverted. Paper filter, pre wet.",
  steps:[{t:0,a:"Pour 150 g by 0:15."},{t:15,a:"Stir continuously until 0:35."},{t:35,a:"Cap on."},{t:65,a:"Flip and press until 1:35, about 90 ml at 4.5% TDS."},{t:95,a:"Dilute with 160 to 200 g hot water."}],
  notes:"The official page states 370 g total, which does not match its own steps.",
  src:"https://worldaeropresschampionship.com/pages/recipes", verified:true},
 {id:"wac-2016", dev:"ap", kind:"champ", name:"World AeroPress Champion 2016", author:"Filip Kucharczyk", cred:"Poland",
- dose:35, water:150, bypass:"100 to 120", temp:"81 °C", grind:"Coarse (Comandante 40 to 45 on aeropress.com)", c5:"38 to 43", setup:"Inverted. Paper filter, rinsed.",
+ dose:35, water:150, bypass:"100 to 120", temp:"81 °C", grind:"Coarse (Comandante 40 to 45 on aeropress.com)", c5:"48, as coarse as it goes", setup:"Inverted. Paper filter, rinsed.",
  steps:[{t:0,a:"Pour 150 g over 15 seconds."},{t:15,a:"Stir until 0:30."},{t:30,a:"Cap on."},{t:60,a:"Flip, swirl, press."},{t:90,a:"Dilute with 100 to 120 g to taste."}],
  notes:"Press duration not stated.",
  src:"https://worldaeropresschampionship.com/pages/recipes", verified:true},
 {id:"wac-2015", dev:"ap", kind:"champ", name:"World AeroPress Champion 2015", author:"Lukas Zahradnik", cred:"Slovakia",
- dose:20, water:230, temp:"79 °C", grind:"Medium", c5:"24 to 26", setup:"Paper filter. Listed as inverted, though no flip step is written.",
+ dose:20, water:230, temp:"79 °C", grind:"Medium", c5:"32 to 37", setup:"Paper filter. Listed as inverted, though no flip step is written.",
  steps:[{t:0,a:"Pour 60 g. Wiggle the brewer hard for 15 seconds."},{t:15,a:"Bloom."},{t:45,a:"Pour the remaining 170 g in 10 seconds."},{t:55,a:"Press over 45 seconds."},{t:100,a:"Done."}],
  notes:"No bypass. aeropress.com's home version presses right after the second pour and stops above the (1) mark.",
  src:"https://worldaeropresschampionship.com/pages/recipes", verified:true},
 
 /* Switch experts */
 {id:"kasuya-hybrid", dev:"sw", kind:"expert", name:"Hybrid Method", author:"Tetsu Kasuya", cred:"World Brewers Cup Champion 2016",
- dose:20, water:280, temp:"93 °C, then about 75 °C", grind:"A little fine (Comandante about 20)", c5:"19 to 21", setup:"Switch with V60 paper.",
+ dose:20, water:280, temp:"93 °C, then about 75 °C", grind:"A little fine (Comandante about 20)", c5:"27 to 30", setup:"Switch with V60 paper.",
  steps:[{t:0,v:"open",a:"Pour 60 g at 93 °C."},{t:30,v:"open",a:"Pour 60 g (120 g). Then cool the kettle to about 75 °C with cold water."},{t:75,v:"closed",a:"Close. Pour to 280 g."},{t:105,v:"open",a:"Open and drain."},{t:180,a:"Stop by 3:00 even if still dripping."}],
  notes:"Splitting the first two pours 50 and 70 brings out sweetness. He said 20 Comandante clicks was a little too fine in a later video. Many blogs quote 90 °C and 70 °C, the video says 93 and 75.",
  src:"https://www.youtube.com/watch?v=gC8K40kZ_6E", verified:true},
 {id:"kasuya-new-hybrid", dev:"sw", kind:"expert", name:"New Hybrid", author:"Tetsu Kasuya", cred:"World Brewers Cup Champion 2016",
- dose:20, water:300, temp:"Start hot, cool to about 80 °C for the last pour", grind:"Comandante about 28", c5:"27 to 29", setup:"Switch with V60 paper.",
+ dose:20, water:300, temp:"90 to 93 °C, then about 80 °C for the last pour", grind:"Comandante about 28", c5:"37 to 40", setup:"Switch with V60 paper.",
  steps:[{t:0,v:"closed",a:"Bloom with about 40 g."},{t:40,v:"open",a:"Open. Pour to 120 g."},{t:90,v:"open",a:"Pour to 200 g. Cool the kettle to about 80 °C."},{t:130,v:"closed",a:"Close. Pour to 300 g."},{t:165,v:"open",a:"Open and drain."},{t:210,a:"Done, about 3:30."}],
  notes:"The opening time after the bloom is not said out loud in the video. Third party versions give 0:35 to 0:40 and a 90 to 93 °C start.",
  src:"https://www.youtube.com/watch?v=4FeUp_zNiiY", verified:true},
 {id:"kasuya-switch-2022", dev:"sw", kind:"expert", name:"Immersion then pour", author:"Tetsu Kasuya", cred:"Hario ambassador method, 2022",
- dose:20, water:300, temp:"Not stated", grind:"About medium", c5:"23 to 25", setup:"Switch with V60 paper.",
+ dose:20, water:300, temp:"Not stated", grind:"About medium", c5:"32 to 37", setup:"Switch with V60 paper.",
  steps:[{t:0,v:"closed",a:"Pour 240 g."},{t:90,v:"open",a:"Gently break the layer at the edges. Open and pour to 300 g."},{t:180,a:"Done, 3:00 to 3:30."}],
  notes:"The valve opening is implied in the video, not stated.",
  src:"https://www.youtube.com/watch?v=sBwfcNXZhgA", verified:true},
 {id:"kasuya-iced-2026", dev:"sw", kind:"expert", name:"Two pour iced Hybrid", author:"Tetsu Kasuya", cred:"August 2026",
- dose:20, water:150, temp:"90 to 93 °C", grind:"28 clicks, grinder not named", c5:"27 to 29", setup:"80 g ice in the server.",
+ dose:20, water:150, temp:"90 to 93 °C", grind:"28 clicks, grinder not named", c5:"37 to 40", setup:"80 g ice in the server.",
  steps:[{t:0,v:"open",a:"Pour 50 g, swirl lightly."},{t:40,v:"closed",a:"Close. Pour to 150 g."},{t:90,v:"open",a:"Open, swirl while it drains onto the ice."}],
  notes:"He says cooling the water for this one is optional.",
  src:"https://www.youtube.com/watch?v=v0CXzmw1TXg", verified:true},
 {id:"chronicler-5050", dev:"sw", kind:"expert", name:"Ultimate Switch (50/50)", author:"The Coffee Chronicler", cred:"Asser Christensen, Q Arabica Grader",
- dose:20, water:320, temp:"93 °C start, 86 to boiling by roast", grind:"Medium fine (Comandante 22 to 24)", c5:"21 to 24", setup:"Switch 02 with V60 02 paper, rinsed.",
+ dose:20, water:320, temp:"93 °C start, 86 to boiling by roast", grind:"Medium fine (Comandante 22 to 24)", c5:"30 to 33", setup:"Switch 02 with V60 02 paper, rinsed.",
  steps:[{t:0,v:"open",a:"Pour 160 g in circles."},{t:45,v:"closed",a:"Close. Pour the other 160 g."},{t:120,v:"open",a:"Open and drain."},{t:180,a:"Done, 2:45 to 3:15."}],
  notes:"For a sweeter cup, close at 0:25. Use 1:15 with an entry level grinder. 30 g to 480 g closes at 1:00 and opens at 2:30. He owns a C5 and settled on 15 to 17 clicks for pour over, finer than the conversion suggests, so try that end first.",
  src:"https://coffeechronicler.com/hario-switch/", verified:true},
 {id:"chronicler-8g", dev:"sw", kind:"expert", name:"Small 8 g workhorse", author:"The Coffee Chronicler", cred:"2026 video",
- dose:8, water:130, temp:"93 °C", grind:"Medium fine (Comandante 20 to 22)", c5:"19 to 22", setup:"Switch with Cafec Abaca or V60 paper.",
+ dose:8, water:130, temp:"93 °C", grind:"Medium fine (Comandante 20 to 22)", c5:"28 to 30", setup:"Switch with Cafec Abaca or V60 paper.",
  steps:[{t:0,v:"open",a:"Pour 65 g."},{t:30,v:"closed",a:"Close. Pour to 130 g."},{t:120,v:"open",a:"Open and drain."},{t:150,a:"Done, about 2:30."}],
  notes:"For more coffee, scale up and grind slightly coarser.",
  src:"https://www.youtube.com/watch?v=9zU0FybizSc", verified:true},
 {id:"hoffmann-switch", dev:"sw", kind:"expert", name:"Daily driver technique", author:"James Hoffmann", cred:"World Barista Champion 2007",
- dose:15, water:250, temp:"Not stated", grind:"Pretty fine", c5:"16 to 18", setup:"Switch with paper filter.",
+ dose:15, water:250, temp:"Not stated", grind:"Pretty fine", c5:"21 to 25", setup:"Switch with paper filter.",
  steps:[{t:0,v:"closed",a:"Bloom with about 30 g, swirl."},{t:30,v:"closed",a:"Fill to 250 g. The exact time is not stated."},{t:120,v:"open",a:"Small stir, then open."}],
  notes:"A technique from his 2020 video, not a full recipe. Drawdown took about 2:10 with Hario papers. Recipes online with 93 °C and 330 ml do not match the video.",
  src:"https://www.youtube.com/watch?v=QjIvN8mlK9Y", verified:true},
 {id:"hario-official", dev:"sw", kind:"expert", name:"Official Switch 02 recipe", author:"Hario", cred:"Printed manual",
- dose:20, water:240, temp:"Hot water, no number", grind:"Medium fine", c5:"19 to 21", setup:"V60 02 paper.",
+ dose:20, water:240, temp:"Hot water, no number", grind:"Medium fine", c5:"26 to 31", setup:"V60 02 paper.",
  steps:[{t:0,v:"closed",a:"Pour all 240 g."},{t:120,v:"open",a:"Open and drain. Stir first for a stronger cup."}],
  notes:"The simplest baseline to calibrate grind against.",
  src:"https://www.hario.com/product/SSD-200.pdf", verified:true},
 
 /* Switch champions */
 {id:"winton-immersion", dev:"sw", kind:"champ", name:"Full immersion", author:"Matt Winton", cred:"World Brewers Cup Champion 2021",
- dose:16, water:240, temp:"93 °C", grind:"Similar to V60", c5:"22 to 24", setup:"Rinse and preheat, drain the rinse water.",
+ dose:16, water:240, temp:"93 °C", grind:"Similar to V60", c5:"26 to 31", setup:"Rinse and preheat, drain the rinse water.",
  steps:[{t:0,v:"closed",a:"Pour all 240 g at once."},{t:240,v:"open",a:"Open with a small swirl."},{t:300,v:"closed",a:"Close to stop, about a minute of drawdown."}],
  notes:"For the 03 size use 24 g to 360 g.",
  src:"https://www.youtube.com/watch?v=g9diFrEkn3M", verified:true},
 {id:"winton-bloom", dev:"sw", kind:"champ", name:"Bloom then immersion", author:"Matt Winton", cred:"World Brewers Cup Champion 2021",
- dose:16, water:240, temp:"93 °C", grind:"Similar to V60", c5:"22 to 24", setup:"Rinse and preheat, drain the rinse water.",
+ dose:16, water:240, temp:"93 °C", grind:"Similar to V60", c5:"26 to 31", setup:"Rinse and preheat, drain the rinse water.",
  steps:[{t:0,v:"open",a:"Pour 50 g."},{t:30,v:"closed",a:"Close. Pour to 240 g."},{t:180,v:"open",a:"Open with a small swirl."}],
  notes:"Same video as the full immersion version.",
  src:"https://www.youtube.com/watch?v=g9diFrEkn3M", verified:true},
 {id:"fukahori", dev:"sw", kind:"champ", name:"MAME house recipe", author:"Emi Fukahori", cred:"World Brewers Cup Champion 2018",
- dose:14, water:200, temp:"93 °C", grind:"Comandante 25", c5:"24 to 26", setup:"V60 02 paper. Rinse with the valve open, then close and empty the server.",
+ dose:14, water:200, temp:"93 °C", grind:"Comandante 25", c5:"33 to 36", setup:"V60 02 paper. Rinse with the valve open, then close and empty the server.",
  steps:[{t:0,v:"closed",a:"Pour 50 g."},{t:30,v:"open",a:"Open. One continuous centre pour to 200 g, finish by 1:10."},{t:140,v:"closed",a:"Once drained, close to cut the last drops."}],
  notes:"94 to 95 °C for brighter, 85 to 92 °C to tone it down. Coarser if bitter, finer if sour.",
  src:"https://www.youtube.com/watch?v=3euEkTBxtEk", verified:true},
@@ -717,31 +727,31 @@ const R = [
  notes:"Filmed on The Coffee Chronicler's channel.",
  src:"https://www.youtube.com/watch?v=wCNxPYyGWoo", verified:true},
 {id:"boen", dev:"sw", kind:"champ", name:"World Brewers Cup 2021 Switch", author:"Ole Kristian Bøen", cred:"Norwegian Brewers Cup Champion 2020",
- dose:16.5, water:240, temp:"96 °C", grind:"Medium fine", c5:"19 to 21", setup:"Switch 02 with V60 02 paper.",
+ dose:16.5, water:240, temp:"96 °C", grind:"Medium fine", c5:"26 to 31", setup:"Switch 02 with V60 02 paper.",
  steps:[{t:0,v:"closed",a:"Pour 50 g."},{t:40,v:"open",a:"Open. Pour 100 g to the centre."},{t:90,v:"closed",a:"Close. Pour 90 g in circles."},{t:130,v:"open",a:"Open and drain."},{t:190,a:"Done, 3:00 to 3:15."}],
  notes:"Built for a natural Geisha.",
  src:"https://www.hario-europe.com/blogs/hario-community/ole-kristian-boens-switch-recipe", verified:true},
 {id:"wibawa", dev:"sw", kind:"champ", name:"Double Immersion", author:"Ryan Wibawa", cred:"Indonesian Brewers Cup Champion 2016 and 2024",
- dose:15, water:220, temp:"86 °C, then 92 °C", grind:"Medium", c5:"23 to 25", setup:"Two kettles, or reheat between stages.",
+ dose:15, water:220, temp:"86 °C, then 92 °C", grind:"Medium", c5:"32 to 37", setup:"Two kettles, or reheat between stages.",
  steps:[{t:0,v:"closed",a:"Pour 100 g at 86 °C. Bloom."},{t:40,v:"open",a:"Open. It drains in about 5 seconds."},{t:45,v:"closed",a:"Close. Pour 120 g at 92 °C."},{t:110,v:"open",a:"Open and drain fully. Swirl the cup before serving."}],
  notes:"Timings here run on one clock. His recipe restarts the timer at the second pour.",
  src:"https://www.hario-europe.com/blogs/hario-community/interview-with-ryan-wibawa-switch-recipe", verified:true},
 
 /* Training */
 {id:"train-under", dev:"ap", kind:"train", name:"Extraction triangle 1: under", author:"Training", cred:"Brew all three back to back with one coffee",
- dose:15, water:250, temp:"93 °C", grind:"10 clicks coarser than your usual", c5:"about 30", setup:"Standard. One paper filter. Label the cup 1.",
+ dose:15, water:250, temp:"93 °C", grind:"10 clicks coarser than your usual", c5:"about 40", setup:"Standard. One paper filter. Label the cup 1.",
  steps:[{t:0,a:"Pour 250 g and insert the plunger."},{t:60,a:"Press quickly, about 15 seconds."},{t:75,a:"Done. Set it aside to cool."}],
  notes:"Expect sour, thin and a little salty. That is under extraction.", src:"", verified:true},
 {id:"train-mid", dev:"ap", kind:"train", name:"Extraction triangle 2: middle", author:"Training", cred:"The reference cup",
- dose:15, water:250, temp:"93 °C", grind:"Your usual setting", c5:"about 20", setup:"Standard. One paper filter. Label the cup 2.",
+ dose:15, water:250, temp:"93 °C", grind:"Your usual setting", c5:"about 30", setup:"Standard. One paper filter. Label the cup 2.",
  steps:[{t:0,a:"Pour 250 g and insert the plunger."},{t:120,a:"Swirl gently."},{t:150,a:"Press gently, about 30 seconds."},{t:180,a:"Done."}],
  notes:"Taste this one first, then compare the other two against it.", src:"", verified:true},
 {id:"train-over", dev:"ap", kind:"train", name:"Extraction triangle 3: over", author:"Training", cred:"Brew all three back to back with one coffee",
- dose:15, water:250, temp:"93 °C", grind:"10 clicks finer than your usual", c5:"about 10", setup:"Standard. One paper filter. Label the cup 3.",
+ dose:15, water:250, temp:"93 °C", grind:"10 clicks finer than your usual", c5:"about 20", setup:"Standard. One paper filter. Label the cup 3.",
  steps:[{t:0,a:"Pour 250 g, stir 10 times, insert the plunger."},{t:120,a:"Stir 10 more times."},{t:240,a:"Press all the way, through the hiss."},{t:270,a:"Done."}],
  notes:"Expect hollow, bitter and drying on the gums. That is over extraction.", src:"", verified:true},
 {id:"train-cupping", dev:"cup", kind:"train", name:"Home cupping", author:"Training", cred:"SCA cupping ratio",
- dose:8.25, water:150, temp:"93 °C", grind:"Medium coarse", c5:"about 26", setup:"One cup per coffee, ground straight into the cup. Two spoons and a glass of rinse water.",
+ dose:8.25, water:150, temp:"93 °C", grind:"Medium coarse", c5:"38 to 42", setup:"One cup per coffee, ground straight into the cup. Two spoons and a glass of rinse water.",
  steps:[{t:0,a:"Smell the dry grounds. Pour 150 g water into each cup, filling to the brim."},{t:240,a:"Break the crust: push the grounds back with a spoon three times and smell the steam."},{t:270,a:"Skim off the floating grounds and foam with two spoons."},{t:600,a:"Start tasting. Slurp from the spoon and rinse it between coffees."},{t:1200,a:"Taste again as it cools. Acidity and sweetness show more now."}],
  notes:"It takes brewing skill out of the comparison, so the differences you taste come from the coffee.", src:"", verified:true}
 ];
@@ -761,7 +771,7 @@ const $ = s=>document.querySelector(s);
 const esc = s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const mmss = s=>{s=Math.max(0,Math.floor(s));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
 const ratio = (d,w)=>d&&w?"1:"+(w/d).toFixed(1).replace(/\.0$/,""):"–";
-const parseTime = v=>{if(!v)return null;const m=String(v).trim().match(/^(\d+):(\d{1,2})$/);if(m)return +m[1]*60+ +m[2];const n=parseFloat(v);return isNaN(n)?null:n};
+const parseTime = v=>{if(!v)return null;const m=String(v).trim().match(/^(\d+)[:.,](\d{2})$/);if(m)return +m[1]*60+ +m[2];const n=parseFloat(v);return isNaN(n)?null:n};
 function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,2200)}
 function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
@@ -788,7 +798,7 @@ function chipGroup(el,onChange){
 let brews = lsGet("brews-local",[]);
 let beans = lsGet("beans-local",[]);
 let db = null;
-function renderAll(){renderHistory();renderRecipes();renderBeans();fillBeanPick();renderCoach();if(document.getElementById("backupNote"))backupNote()}
+function renderAll(){renderHistory();renderRecipes();renderBeans();fillBeanPick();renderCoach();if(document.getElementById("brewBean")){fillBrewBean();renderPlan()}if(document.getElementById("backupNote"))backupNote()}
 function setSync(on,text){$("#syncDot").classList.toggle("on",on);$("#syncText").textContent=text}
 setSync(true,"Saved on this phone");
 (async()=>{try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){}})();
@@ -949,6 +959,41 @@ function setScale(dose){
   const d=Math.max(1,Math.min(120,round1(dose||cur.dose)));
   scale=d/cur.dose;saveDose(cur.id,scale===1?null:d);renderBrew();
 }
+/* ---------- the plan for this coffee, shown before you brew ---------- */
+let planNow=null;
+function fillBrewBean(){
+  const sel=$("#brewBean");if(!sel)return;
+  const act=activeBeans(),want=lsGet("brewBean","");
+  sel.innerHTML=act.map(b=>`<option value="${esc(b.id)}">${esc(b.name+(b.roaster?", "+b.roaster:""))}</option>`).join("")+`<option value="">No particular coffee</option>`;
+  sel.value=act.some(b=>b.id===want)?want:(act[0]?act[0].id:"");
+}
+function brewCtx(){
+  const b=allBeans().find(x=>x.id===$("#brewBean").value);
+  return b?{name:b.name,roaster:b.roaster||"",roast:b.roast||"",process:b.process||"",roastDate:b.roastDate||"",beanId:b.id}:null;
+}
+function renderPlan(){
+  const el=$("#brewPlan");if(!el||typeof cur==="undefined")return;
+  if(cur.dev==="cup"){el.hidden=true;planNow=null;return}
+  const ctx=brewCtx();
+  const lane=laneOf({device:cur.dev,recipe:cur.id});
+  let p,move="";
+  if(ctx){
+    const key=bagKey({bean:ctx.name,roaster:ctx.roaster,roastDate:ctx.roastDate}),l=bagBrews(key,lane),last=l[l.length-1];
+    if(last&&last.recipe===cur.id){
+      const v=coach(key,lane,ctx.roastDate,ctx.roast,Object.assign({},ctx,{recipe:cur.id})),t=v.target||{};
+      p={clicks:t.clicks??last.clicks,t1:t.temp??last.temp,t2:t.temp2??last.temp2,why:[`Picks up from your last cup of this bag, ${last.score}/10 at ${settingLine(last)}.`],rest:restLine(ctx.roastDate?Math.round((new Date(today())-new Date(ctx.roastDate))/864e5):null,ctx.roast)};
+      move=v.done?"":v.head;
+    }else p=planFor(cur,ctx);
+  }else p=planFor(cur,{});
+  planNow=p;
+  const temps=p.t1!=null?(p.t2!=null?`${p.t1} then ${p.t2} °C`:`${p.t1} °C`):esc(cur.temp||"");
+  el.hidden=false;
+  el.innerHTML=`<div class="eyebrow">${ctx?"Your plan for "+esc(ctx.name):"Starting point"}</div>
+    <div class="ptop">${p.clicks!=null?p.clicks+" clicks":"Grind by eye"}  ·  ${temps}  ·  ${sDose()} g to ${sWater()} g</div>
+    ${move?`<div class="pmove"><b>The one change to try:</b> ${esc(move)}</div>`:""}
+    <div class="pwhy">${esc([...p.why,p.rest].filter(Boolean).join(" "))}</div>`;
+}
+$("#brewBean").addEventListener("change",()=>{lsSet("brewBean",$("#brewBean").value);renderPlan()});
 function pickBrew(id){
   cur=byId[id]||R[0];pick.value=cur.id;lsSet("brewRecipe",cur.id);resetTimer();
   const d=savedDose(cur.id);scale=d?d/cur.dose:1;renderBrew();
@@ -960,6 +1005,7 @@ $("#doseReset").addEventListener("click",()=>setScale(cur.dose));
 pick.addEventListener("change",()=>pickBrew(pick.value));
 
 function renderBrew(){
+  if(typeof renderPlan==="function")setTimeout(renderPlan,0);
   $("#brewName").innerHTML=`<span>${recipeHead(cur)}</span>`;
   $("#brewStats").innerHTML = stats([["Coffee",sDose()+" g"],["Water",sWater()+" g"],["Ratio",ratio(sDose(),sWater())],["Temp",cur.temp||"–"],[cur.mine?"C5":"C5 est.",cur.c5||"–"]]);
   $("#brewDose").value=sDose();
@@ -1010,6 +1056,9 @@ $("#logThisBtn").addEventListener("click",()=>{
   if(cur.dev==="cup"){openGuide("taste","ex-cupping");return}
   const t = running ? (performance.now()-startAt)/1000 : elapsed;
   prefillFromRecipe(cur.id); if(t>0)$("#fTime").value=mmss(t);
+  const bid=$("#brewBean").value;if(bid){fillBeanPick(bid);const bn=allBeans().find(x=>x.id===bid);if(bn&&bn.roastDate)$("#fRoastDate").value=bn.roastDate}
+  if(planNow){if(planNow.clicks!=null)$("#fClicks").value=planNow.clicks;if(planNow.t1!=null)$("#fTemp").value=planNow.t1;if(planNow.t2!=null){showTemp2(true);$("#fTemp2").value=planNow.t2}}
+  renderCoach();
   showTab("log");window.scrollTo(0,0);
 });
 
@@ -1038,12 +1087,20 @@ $("#recipeInfo").addEventListener("click",e=>{
 function today(){const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 let editingId=null;
 function firstNum(s){const m=String(s||"").match(/\d+(\.\d+)?/);return m?m[0]:""}
+/* the second temperature shows for two stage recipes, or when you ask for it */
+function showTemp2(on){$("#fTemp2Wrap").hidden=!on;$("#fTemp2Add").hidden=on;$("#fTempLbl").textContent=on?"First temp (°C)":"Water temp (°C)";if(!on)$("#fTemp2").value=""}
+function setTemp2(v){if(v!=null&&v!==""){showTemp2(true);$("#fTemp2").value=v}}
+function syncTemp2(){const r=byId[fRecipe.value];if(r&&twoTemps(r))showTemp2(true);else if(!$("#fTemp2").value)showTemp2(false)}
+$("#fTemp2Add").addEventListener("click",()=>{showTemp2(true);setTimeout(()=>$("#fTemp2").focus(),0)});
+$("#fTemp2Rm").addEventListener("click",()=>showTemp2(false));
 function prefillFromRecipe(id){
   const r=byId[id]; if(!r)return;
   resetForm(false);
   const d=savedDose(id)||r.dose, k=d/r.dose;
   $("#fDevice").value=r.dev;fillRecipeOptions(r.dev);fRecipe.value=r.id;
-  $("#fDose").value=round1(d);$("#fWater").value=Math.round(r.water*k);$("#fTemp").value=firstNum(r.temp);$("#fClicks").value=firstNum(r.c5);
+  const tt=recipeTemps(r);
+  $("#fDose").value=round1(d);$("#fWater").value=Math.round(r.water*k);$("#fTemp").value=tt[0]??"";$("#fClicks").value=c5Range(r)?c5Range(r).mid:"";
+  showTemp2(tt.length>1);if(tt.length>1)$("#fTemp2").value=tt[1]??"";
   const last=r.steps[r.steps.length-1];$("#fTime").value=mmss(last.t);
   updateRatio();showRecipeInfo();
 }
@@ -1051,7 +1108,7 @@ function resetForm(clearCoffee=true){
   editingId=null;$("#formTitle").textContent="New brew";$("#saveBtn").textContent="Save brew";
   const keepBean=$("#fBeanPick").value;
   $("#logForm").reset();
-  $("#fDate").value=today();fillRecipeOptions($("#fDevice").value);
+  $("#fDate").value=today();fillRecipeOptions($("#fDevice").value);showTemp2(false);
   const act=activeBeans();lastPickId=null;
   fillBeanPick(clearCoffee||!keepBean||keepBean==="__new" ? (act[0]?act[0].id:"__new") : keepBean);
   $("#fNotes").placeholder="Acidity, sweetness, body, finish. Then what it reminds you of.";setFlav([]);setMouth([]);setOpt("fStrength","");setOpt("fExtraction","");autoNext="";
@@ -1059,7 +1116,7 @@ function resetForm(clearCoffee=true){
   updateHint();updateRatio();renderCoach();
 }
 $("#fDevice").addEventListener("change",()=>fillRecipeOptions($("#fDevice").value));
-fRecipe.addEventListener("change",()=>{showRecipeInfo();if(fRecipe.value)prefillFromRecipe(fRecipe.value)});
+fRecipe.addEventListener("change",()=>{showRecipeInfo();if(fRecipe.value)prefillFromRecipe(fRecipe.value);else syncTemp2()});
 $("#fScore").addEventListener("input",()=>$("#vScore").textContent=$("#fScore").value);
 function updateRatio(){const d=+$("#fDose").value,w=+$("#fWater").value;$("#ratioOut").textContent=d&&w?`Ratio ${ratio(d,w)}`:""}
 $("#fDose").addEventListener("input",updateRatio);$("#fWater").addEventListener("input",updateRatio);
@@ -1076,7 +1133,7 @@ $("#logForm").addEventListener("submit",async e=>{
       id: editingId || newId(),
       date:$("#fDate").value, device:$("#fDevice").value, recipe:fRecipe.value,
       beanId:bn?bn.id:"", bean:bn?bn.name:"", roaster:bn?bn.roaster||"":"", roast:bn?bn.roast||"":"", process:bn?bn.process||"":"", roastDate:bn?bn.roastDate||"":"",
-      clicks:num("#fClicks"), dose:num("#fDose"), water:num("#fWater"), temp:num("#fTemp"), time:parseTime($("#fTime").value),
+      clicks:num("#fClicks"), dose:num("#fDose"), water:num("#fWater"), temp:num("#fTemp"), temp2:$("#fTemp2Wrap").hidden?null:num("#fTemp2"), time:parseTime($("#fTime").value),
       strength:getOpt("fStrength"), extraction:getOpt("fExtraction"), bug:getPick("fBug"), vs:getOpt("fVs"), score:+$("#fScore").value,
       flavours:getFlav(), mouth:getMouth(), notes:$("#fNotes").value.trim(), next:$("#fNext").value.trim(),
       created: editingId ? (brews.find(b=>b.id===editingId)?.created||Date.now()) : Date.now()
@@ -1095,19 +1152,26 @@ $("#logForm").addEventListener("submit",async e=>{
 });
 
 /* ---------- flavours ---------- */
+/* The Coffee Taster's Flavor Wheel (SCA and World Coffee Research, 2016): nine families, then groups, then words.
+   Tropical is not on the wheel, it is here because roasters print it on bags. */
 const WHEEL=[
- {c:"Floral",col:"#C4638F",g:[{n:"Floral",x:["Jasmine","Rose","Chamomile","Orange blossom","Black tea"]}]},
- {c:"Fruity",col:"#C8483B",g:[{n:"Berry",x:["Strawberry","Raspberry","Blueberry","Blackberry"]},{n:"Citrus",x:["Lemon","Lime","Orange","Grapefruit"]},{n:"Stone fruit",x:["Peach","Apricot","Cherry","Plum"]},{n:"Tropical",x:["Pineapple","Mango","Guava","Passion fruit","Lychee"]},{n:"Orchard",x:["Apple","Pear","Grape","Pomegranate"]},{n:"Dried fruit",x:["Raisin","Prune","Date"]}]},
- {c:"Fermented",col:"#A58A1C",g:[{n:"Fermented",x:["Winey","Boozy","Yogurt","Vinegar"]}]},
- {c:"Sweet",col:"#C7801F",g:[{n:"Sweet",x:["Honey","Caramel","Brown sugar","Maple","Vanilla","Molasses"]}]},
- {c:"Nutty and cocoa",col:"#8A5A34",g:[{n:"Nutty",x:["Almond","Hazelnut","Peanut"]},{n:"Cocoa",x:["Milk chocolate","Dark chocolate","Cocoa"]}]},
- {c:"Spice",col:"#B0602A",g:[{n:"Spice",x:["Cinnamon","Clove","Cardamom","Nutmeg","Black pepper"]}]},
- {c:"Roasted",col:"#6E6258",g:[{n:"Roasted",x:["Toast","Malt","Tobacco","Smoky","Burnt"]}]},
- {c:"Green",col:"#5E8C4A",g:[{n:"Green",x:["Grassy","Herbal","Peapod","Hay","Underripe"]}]},
- {c:"Off notes",col:"#7C8187",g:[{n:"Off notes",x:["Papery","Earthy","Musty","Rubbery","Medicinal"]}]}
+ {c:"Floral",col:"#C4638F",g:[{n:"Black tea",x:[]},{n:"Floral",x:["Chamomile","Rose","Jasmine"]}]},
+ {c:"Fruity",col:"#C8483B",g:[{n:"Berry",x:["Blackberry","Raspberry","Blueberry","Strawberry"]},{n:"Dried fruit",x:["Raisin","Prune"]},{n:"Other fruit",x:["Coconut","Cherry","Pomegranate","Pineapple","Grape","Apple","Peach","Pear"]},{n:"Citrus fruit",x:["Grapefruit","Orange","Lemon","Lime"]},{n:"Tropical",x:["Guava","Mango","Passion fruit","Lychee"]}]},
+ {c:"Sour/Fermented",col:"#B9A21E",g:[{n:"Sour",x:["Sour aromatics","Acetic acid","Butyric acid","Isovaleric acid","Citric acid","Malic acid"]},{n:"Alcohol/Fermented",x:["Winey","Whiskey","Fermented","Overripe"]}]},
+ {c:"Green/Vegetative",col:"#5E8C4A",g:[{n:"Olive oil",x:[]},{n:"Raw",x:[]},{n:"Green/Vegetative",x:["Under-ripe","Peapod","Fresh","Dark green","Vegetative","Hay-like","Herb-like"]},{n:"Beany",x:[]}]},
+ {c:"Other",col:"#7C8187",g:[{n:"Papery/Musty",x:["Stale","Cardboard","Papery","Woody","Moldy/Damp","Musty/Dusty","Musty/Earthy","Animalic","Meaty brothy","Phenolic"]},{n:"Chemical",x:["Bitter","Salty","Medicinal","Petroleum","Skunky","Rubber"]}]},
+ {c:"Roasted",col:"#6E6258",g:[{n:"Pipe tobacco",x:[]},{n:"Tobacco",x:[]},{n:"Burnt",x:["Acrid","Ashy","Smoky","Brown roast"]},{n:"Cereal",x:["Grain","Malt"]}]},
+ {c:"Spices",col:"#B0602A",g:[{n:"Pungent",x:[]},{n:"Pepper",x:[]},{n:"Brown spice",x:["Anise","Nutmeg","Cinnamon","Clove"]}]},
+ {c:"Nutty/Cocoa",col:"#8A5A34",g:[{n:"Nutty",x:["Peanuts","Hazelnut","Almond"]},{n:"Cocoa",x:["Chocolate","Dark chocolate"]}]},
+ {c:"Sweet",col:"#C7801F",g:[{n:"Brown sugar",x:["Molasses","Maple syrup","Caramelized","Honey"]},{n:"Vanilla",x:[]},{n:"Vanillin",x:[]},{n:"Overall sweet",x:[]},{n:"Sweet aromatics",x:[]}]}
 ];
+/* words from the earlier, looser wheel, so brews logged before still find their family */
+const OLD_WORDS={"Floral":["Orange blossom"],"Fruity":["Fruity","Plum","Apricot","Date","Underripe fruit"],"Sour/Fermented":["Fermented","Boozy","Yogurt","Vinegar"],
+  "Sweet":["Sweet","Caramel","Maple","Brown sugar"],"Nutty/Cocoa":["Nutty and cocoa","Peanut","Milk chocolate","Cocoa"],"Spices":["Spice","Cardamom","Black pepper"],
+  "Roasted":["Toast","Smoky","Burnt"],"Green/Vegetative":["Green","Grassy","Herbal","Peapod","Hay","Underripe"],"Other":["Off notes","Papery","Earthy","Musty","Rubbery","Medicinal"]};
 const MOUTH=["Tea-like","Silky","Juicy","Syrupy","Heavy","Muddy","Clean finish","Long finish","Short finish"];
-const CAT_OF={};WHEEL.forEach(w=>{CAT_OF[w.c]=w;w.g.forEach(g=>{CAT_OF[g.n]=w;g.x.forEach(x=>CAT_OF[x]=w)})});
+const CAT_OF={};WHEEL.forEach(w=>{CAT_OF[w.c]=w;w.g.forEach(g=>{CAT_OF[g.n]=CAT_OF[g.n]||w;g.x.forEach(x=>CAT_OF[x]=CAT_OF[x]||w)})});
+Object.entries(OLD_WORDS).forEach(([c,ws])=>{const w=WHEEL.find(x=>x.c===c);ws.forEach(x=>{if(!CAT_OF[x])CAT_OF[x]=w})});
 function colOf(f){return CAT_OF[f]?CAT_OF[f].col:"var(--muted)"}
 function dot(f){return `<i class="dotc" style="background:${colOf(f)}"></i>`}
 let flavSel=new Set(),openCat=null;
@@ -1116,20 +1180,20 @@ function renderWheel(){
     return `<button type="button" class="fchip wcat" data-cat="${esc(w.c)}" aria-expanded="${openCat===w.c}"><i class="dotc" style="background:${w.col}"></i>${esc(w.c)}${n?`<b>${n}</b>`:""}</button>`}).join("");
   const w=WHEEL.find(x=>x.c===openCat);$("#wheelPanel").hidden=!w;
   if(w){
-    const chip=(f,cls,label)=>`<button type="button" class="fchip ${cls||""}" data-f="${esc(f)}" aria-pressed="${flavSel.has(f)}">${esc(label||f)}</button>`;
-    let h=`<div class="wgroup">${chip(w.c,"gchip","Just "+w.c.toLowerCase())}${w.g.length===1?w.g[0].x.map(x=>chip(x)).join(""):""}</div>`;
-    if(w.g.length>1)h+=w.g.map(g=>`<div class="wgroup">${chip(g.n,"gchip")}${g.x.map(x=>chip(x)).join("")}</div>`).join("");
+    const chip=(f,cls,label)=>{f=f.replace(/ in general$/,"");return `<button type="button" class="fchip ${cls||""}" data-f="${esc(f)}" aria-pressed="${flavSel.has(f)}">${esc(label||f)}</button>`};
+    let h=`<div class="wgroup">${chip(w.c,"gchip","Just "+w.c.toLowerCase())}${w.g.filter(g=>!g.x.length).map(g=>chip(g.n)).join("")}</div>`;
+    h+=w.g.filter(g=>g.x.length).map(g=>`<div class="wgroup">${chip(g.n===w.c?g.n+" in general":g.n,"gchip",g.n===w.c?g.n+", general":g.n)}${g.x.map(x=>chip(x)).join("")}</div>`).join("");
     $("#wheelPanel").innerHTML=h;
   }
   $("#flavPicked").innerHTML=[...flavSel].map(f=>`<button type="button" class="fchip" data-rm="${esc(f)}" aria-label="Remove ${esc(f)}">${dot(f)}${esc(f)} &#215;</button>`).join("");
 }
 $("#wheelCats").addEventListener("click",e=>{const b=e.target.closest("[data-cat]");if(!b)return;openCat=openCat===b.dataset.cat?null:b.dataset.cat;renderWheel()});
-$("#wheelPanel").addEventListener("click",e=>{const b=e.target.closest("[data-f]");if(!b)return;const f=b.dataset.f;flavSel.has(f)?flavSel.delete(f):flavSel.add(f);renderWheel()});
-$("#flavPicked").addEventListener("click",e=>{const b=e.target.closest("[data-rm]");if(!b)return;flavSel.delete(b.dataset.rm);renderWheel()});
+$("#wheelPanel").addEventListener("click",e=>{const b=e.target.closest("[data-f]");if(!b)return;const f=b.dataset.f;flavSel.has(f)?flavSel.delete(f):flavSel.add(f);renderWheel();if(typeof onTaste==="function")onTaste()});
+$("#flavPicked").addEventListener("click",e=>{const b=e.target.closest("[data-rm]");if(!b)return;flavSel.delete(b.dataset.rm);renderWheel();if(typeof onTaste==="function")onTaste()});
 function getFlav(){return [...flavSel]}
 function setFlav(list){flavSel=new Set(list||[]);openCat=null;renderWheel()}
 $("#fMouth").innerHTML=MOUTH.map(f=>`<button type="button" class="fchip" aria-pressed="false" data-f="${esc(f)}">${esc(f)}</button>`).join("");
-$("#fMouth").addEventListener("click",e=>{const b=e.target.closest(".fchip");if(b)b.setAttribute("aria-pressed",String(b.getAttribute("aria-pressed")!=="true"))});
+$("#fMouth").addEventListener("click",e=>{const b=e.target.closest(".fchip");if(b){b.setAttribute("aria-pressed",String(b.getAttribute("aria-pressed")!=="true"));if(typeof onTaste==="function")onTaste()}});
 function getMouth(){return [...document.querySelectorAll("#fMouth .fchip[aria-pressed=true]")].map(b=>b.dataset.f)}
 function setMouth(list){const set=new Set(list||[]);document.querySelectorAll("#fMouth .fchip").forEach(b=>b.setAttribute("aria-pressed",String(set.has(b.dataset.f))))}
 renderWheel();
@@ -1147,7 +1211,9 @@ function normBrew(b){
   return Object.assign({},b,{
     device:b.device||"ap", recipe:b.recipe||"", bean:b.bean||"", roaster:b.roaster||"", roast:b.roast||"", roastDate:b.roastDate||"",
     clicks:b.clicks==null?null:+b.clicks, dose:b.dose==null?null:+b.dose, water:b.water==null?null:+b.water,
-    temp:b.temp==null?null:+b.temp, time:b.time==null?null:+b.time, score:b.score==null?null:+b.score,
+    temp:b.temp==null?null:+b.temp, temp2:b.temp2==null||b.temp2===""?null:+b.temp2, score:b.score==null?null:+b.score,
+    /* a time like 1.15 was typed as minutes and seconds, so read it as 1:15 */
+    time:b.time==null?null:(+b.time<10&&+b.time%1?Math.floor(+b.time)*60+Math.round((+b.time%1)*100):+b.time),
     strength:b.strength||(t==="weak"||t==="strong"?t:""),
     extraction:b.extraction||(["sour","bitter","balanced"].includes(t)?t:""),
     flavours:b.flavours||[], mouth:b.mouth||[], bug:b.bug||"", vs:b.vs||"", advice:b.advice||null, created:b.created||0
@@ -1177,7 +1243,106 @@ function recipeWindow(r){
 }
 function outsideWindow(w,time){return w&&time!=null&&(time<w.lo||time>w.hi)}
 function ageAt(b){return (b.roastDate&&b.date)?Math.round((new Date(b.date)-new Date(b.roastDate))/864e5):null}
-function settingLine(b){return [b.clicks!=null&&b.clicks+" clicks",b.dose!=null&&b.dose+" g",b.water!=null&&b.water+" g",b.temp!=null&&b.temp+" °C"].filter(Boolean).join(", ")}
+function settingLine(b){return [b.clicks!=null&&b.clicks+" clicks",b.dose!=null&&b.dose+" g",b.water!=null&&b.water+" g",b.temp!=null&&(b.temp2!=null?`${b.temp} then ${b.temp2} °C`:b.temp+" °C")].filter(Boolean).join(", ")}
+
+/* ---------- roast, rest and the plan for a coffee ---------- */
+function roastIdx(r){r=String(r||"").toLowerCase();if(!r)return null;if(/medium.?light|light.?medium/.test(r))return 1;if(/medium.?dark/.test(r))return 3;if(r.includes("light"))return 0;if(r.includes("dark"))return 4;if(r.includes("medium"))return 2;return null}
+/* Rule of thumb from roaster and home-barista guidance: lighter roasts need longer to rest and keep longer. Days. */
+const REST=[{min:7,peak:42,fade:63},{min:5,peak:35,fade:56},{min:4,peak:28,fade:49},{min:3,peak:21,fade:42},{min:2,peak:18,fade:35}];
+function restFor(roast){const i=roastIdx(roast);return REST[i==null?2:i]}
+function roastWord(roast){return String(roast||"").trim().toLowerCase()||"this"}
+function restLine(age,roast){
+  if(age==null)return "";const rw=restFor(roast);
+  if(age<rw.min)return `Day ${age} off roast, still resting. Until about day ${rw.min} it tastes sour and thin whatever you do, so do not read the grind off it.`;
+  if(age<=rw.peak)return `Day ${age} off roast, in its best window.`;
+  if(age<=rw.fade)return `Day ${age} off roast, past its peak but still good. A click or two finer helps an older coffee hold its sweetness.`;
+  return `Day ${age} off roast. Past about ${Math.round(rw.fade/7)} weeks the top notes fade, so expect flatter cups whatever you change.`;
+}
+function c5Range(r){const m=String(r&&r.c5||"").match(/\d+/g);if(!m)return null;const a=+m[0],b=m[1]?+m[1]:a;return {lo:a,hi:b,mid:Math.round((a+b)/2)}}
+/* A recipe's temperatures. "93 °C, then 75 °C" is two stages. "92 °C light, 88 °C medium" picks one by roast. */
+function recipeTemps(r,roast){
+  const t=String(r&&r.temp||"");
+  const one=x=>{const m=String(x).match(/(\d+)\s*to\s*(\d+)/);if(m)return Math.round((+m[1]+ +m[2])/2);const n=String(x).match(/\d+/);return n?+n[0]:null};
+  const parts=t.split(/,?\s*then\s*/i);
+  if(parts.length>1)return [one(parts[0]),one(parts[1])];
+  const by=[...t.matchAll(/(\d+)(?:\s*to\s*(\d+))?\s*°C\s*(light|medium|dark)/gi)];
+  if(by.length>1){const g=roastIdx(roast),want=g==null?"medium":g<=1?"light":g>=3?"dark":"medium";
+    const h=by.find(m=>m[3].toLowerCase()===want)||by[0];return [Math.round((+h[1]+ +(h[2]||h[1]))/2)]}
+  return [one(t)];
+}
+function twoTemps(r){return recipeTemps(r).length>1}
+/* Where to start a recipe with a particular coffee: your own cups first, then the recipe, moved for roast and process. */
+function planFor(r,ctx){
+  ctx=ctx||{};
+  const ri=roastIdx(ctx.roast),pr=String(ctx.process||"").toLowerCase(),why=[];
+  const temps=recipeTemps(r,ctx.roast);let t1=temps[0],t2=temps.length>1?temps[1]:null;
+  const range=c5Range(r);let clicks=range?range.mid:null,from="estimate";
+  const all=brews.map(normBrew).filter(b=>b.recipe===r.id&&b.clicks!=null&&b.score!=null);
+  const best=l=>l.slice().sort((a,b)=>b.score-a.score||(b.created||0)-(a.created||0))[0];
+  const same=ctx.name?all.filter(b=>bkey(b.bean,b.roaster)===bkey(ctx.name,ctx.roaster)):[];
+  const good=all.filter(b=>b.score>=7);
+  if(same.length){
+    const b=best(same);clicks=b.clicks;if(b.temp!=null)t1=b.temp;if(b.temp2!=null)t2=b.temp2;from="coffee";
+    why.push(`Your best cup of ${ctx.name} on this recipe was ${b.score}/10 at ${b.clicks} clicks, so it starts there.`);
+  }else if(good.length){
+    const b=best(good);clicks=b.clicks;if(b.temp!=null)t1=b.temp;if(b.temp2!=null)t2=b.temp2;from="recipe";
+    why.push(`Your best cup on this recipe was ${b.score}/10 at ${b.clicks} clicks with ${b.bean||"another coffee"}.${range&&(b.clicks<range.lo-2||b.clicks>range.hi+2)?` The research estimate for the C5 is ${r.c5}, so if this coffee runs ${b.clicks<range.lo?"slow or bitter, go coarser toward it":"fast or sour, go finer toward it"}.`:""}`);
+    const rb=roastIdx(b.roast);
+    if(ri!=null&&rb!=null&&ri!==rb){
+      const d=ri-rb;clicks+=d*2;if(t1!=null)t1-=d;
+      why.push(`${ctx.name||"This coffee"} is roasted ${d<0?"lighter":"darker"}, so ${Math.abs(d*2)} clicks ${d<0?"finer":"coarser"}${t1!=null?` and ${Math.abs(d)} °C ${d<0?"hotter":"cooler"}`:""}.`);
+    }
+  }else if(clicks!=null){
+    why.push(`The recipe's C5 estimate is ${r.c5} clicks.`);
+    if(ri!=null&&ri!==2){
+      const d=ri-2;clicks+=d*2;const roastSpecific=/light|dark/i.test(String(r.temp));if(t1!=null&&!roastSpecific)t1-=d;
+      why.push(`Moved ${Math.abs(d*2)} clicks ${d<0?"finer":"coarser"}${t1!=null&&!roastSpecific?` and ${Math.abs(d)} °C ${d<0?"hotter":"cooler"}`:""} for a ${roastWord(ctx.roast)} roast.`);
+    }
+  }
+  if(from!=="coffee"&&/natural|anaerobic|honey/.test(pr)&&clicks!=null){
+    clicks+=1;if(t1!=null)t1-=1;
+    why.push(`One click coarser${t1!=null?" and 1 °C cooler":""} for a ${pr} coffee, which gives up its flavour more easily than a washed one.`);
+  }
+  if(t1!=null)t1=Math.min(TMAX,t1);if(t2!=null)t2=Math.min(TMAX,t2);
+  const age=ctx.roastDate?Math.round((new Date(today())-new Date(ctx.roastDate))/864e5):null;
+  return {clicks,t1,t2,from,why,rest:restLine(age,ctx.roast),age};
+}
+
+/* Brewing well under the recipe's temperature explains a sour, thin cup before the grind does. */
+function tempCheck(b){
+  const r=byId[b.recipe];if(!r||b.temp==null)return null;
+  const want=recipeTemps(r,b.roast)[0];if(want==null||b.temp>want-5)return null;
+  if(!(b.extraction==="sour"||b.strength==="weak"||["sharp","thin","flat"].includes(b.bug)))return null;
+  return {rule:"recipe-temp",variable:"temp",dir:"up",amt:want-b.temp,
+    head:`Brew ${twoTemps(r)?"the first pours":"it"} at ${want} °C, as the recipe does.`,
+    body:`You logged ${b.temp} °C. This recipe ${twoTemps(r)?`starts at ${want} °C and only drops for the later pour`:`brews at ${want} °C`}. Water that much cooler pulls less out of the coffee, which tastes sour and thin whatever the grind is doing. Fix the temperature first, then judge the grind.`,
+    hold:`Keep ${b.clicks!=null?b.clicks+" clicks":"the grind"} and the same ratio.`,
+    target:{recipe:b.recipe,clicks:b.clicks,dose:b.dose,water:b.water,temp:want,temp2:twoTemps(r)?recipeTemps(r,b.roast)[1]:null}};
+}
+
+/* ---------- what the flavours say about the brew ---------- */
+const FL={
+  bag:["Stale","Cardboard","Papery","Woody","Moldy/Damp","Musty/Dusty","Musty/Earthy","Animalic","Meaty brothy","Phenolic","Medicinal","Petroleum","Skunky","Rubber","Papery/Musty","Chemical","Earthy","Musty","Rubbery","Off notes"],
+  under:["Sour","Sour aromatics","Acetic acid","Citric acid","Salty","Under-ripe","Peapod","Raw","Beany","Green/Vegetative","Grassy","Underripe","Hay-like","Vinegar"],
+  over:["Bitter","Acrid","Ashy"],
+  roast:["Burnt","Smoky","Brown roast","Pipe tobacco","Tobacco"],
+  proc:["Winey","Whiskey","Fermented","Overripe","Alcohol/Fermented","Boozy","Yogurt"]
+};
+function flavourRead(b){
+  const f=new Set([...(b.flavours||[]),...(b.mouth||[])]),hit=k=>FL[k].filter(x=>f.has(x));
+  const list=a=>a.length>1?a.slice(0,-1).join(", ")+" and "+a[a.length-1]:a[0];
+  const out=[],bag=hit("bag"),under=hit("under"),over=hit("over").concat(f.has("Muddy")?["Muddy"]:[]),roast=hit("roast"),proc=hit("proc");
+  if(bag.length)out.push(`${list(bag)} ${bag.length>1?"come":"comes"} from the coffee itself, its age, its storage or a fault in the green beans. No grind or temperature brews ${bag.length>1?"them":"it"} out. A slightly coarser, cooler cup makes ${bag.length>1?"them":"it"} quieter. If the roaster's notes say nothing like it, the bag is the problem.`);
+  if(under.length&&b.extraction!=="bitter")out.push(`${list(under)} ${under.length>1?"point":"points"} to under-extraction: the water stopped before it reached the sweet part. That agrees with finer or hotter.`);
+  if(over.length&&b.extraction!=="sour")out.push(`${list(over)} ${over.length>1?"point":"points"} to over-extraction or fines. That agrees with coarser or a gentler stir.`);
+  if(roast.length)out.push(`${list(roast)} ${roast.length>1?"are roast flavours":"is a roast flavour"}. On a darker coffee, 2 to 3 °C cooler mutes ${roast.length>1?"them":"it"} more than the grind does.`);
+  if(proc.length)out.push(`${list(proc)} usually ${proc.length>1?"come":"comes"} from the processing, natural or anaerobic, not from your brew.`);
+  if(!out.length&&(b.score||0)>=7){
+    const good=[...f].filter(x=>{const w=CAT_OF[x];return w&&["Fruity","Floral","Sweet","Nutty/Cocoa"].includes(w.c)});
+    if(good.length)out.push(`${list(good.slice(0,3))} ${good.length>1?"are":"is"} what a good extraction tastes like. When you change something next, check ${good.length>1?"they are":"it is"} still there.`);
+  }
+  return out.slice(0,2).join(" ");
+}
 function bagBrews(key,lane){
   return brews.map(normBrew).filter(b=>bagKey(b)===key&&laneOf(b)===lane)
     .sort((a,b)=>(a.date||"").localeCompare(b.date||"")||(a.created||0)-(b.created||0));
@@ -1267,57 +1432,61 @@ function refineMove(b,big){
 }
 
 function liveAdvice(b){
-  const age=ageAt(b);
-  if(age!=null&&age<5)
-    return {rule:"resting",head:`Day ${age} off roast.`,
-      body:`Log it, but do not read the grind off this cup. Under five days the gas still coming out of the bag pushes water away from the grounds, which tastes exactly like grinding too coarse. Brew it again on day five or six at the same settings.`};
-  if(age!=null&&age>28)
-    return {rule:"stale",head:`Day ${age} off roast.`,
-      body:`Past four weeks a bag goes flat and papery whatever the grinder does. Finish this one on milk or over ice and start dialling on the next bag.`};
+  const age=ageAt(b),rw=restFor(b.roast);
+  if(age!=null&&age<rw.min)
+    return {rule:"resting",head:`Brew it the same way again on day ${rw.min}.`,
+      body:`Day ${age} is early for a ${roastWord(b.roast)} roast. Until about day ${rw.min} the gas leaving the beans pushes water away from the grounds, which tastes exactly like grinding too coarse. Do not read the grind off this cup.`,note:flavourRead(b)};
+  let v;
   if(b.extraction==="sour"&&["bitter","dry"].includes(b.bug))
-    return {rule:"uneven",head:"Sharp and bitter at once. Leave the grinder alone.",
-      body:`That pair means the water took too much from some grounds and too little from others. Finer makes both ends worse together. Keep ${b.clicks!=null?b.clicks+" clicks":"the grind"}, raise the water ${b.temp!=null?`to ${b.temp+3} °C`:"by 3 °C"} and wet the whole bed on the first pour.`};
-  const win=recipeWindow(byId[b.recipe]);
-  if(outsideWindow(win,b.time))
-    return {rule:"time",head:`${mmss(b.time)} against the recipe's ${mmss(win.mid)}.`,
-      body:`The timing is far enough out that it explains the cup better than the grind does. Run it to the recipe's clock once before you change a setting.`};
-  return refineMove(b,(b.score==null?7:b.score)<=4)||
-    {rule:"",head:"Tap how strong it was and how it extracted.",body:"Two taps and this turns into a number to change."};
+    v={rule:"uneven",head:"Sharp and bitter at once. Leave the grinder alone.",
+      body:`That pair means the water took too much from some grounds and too little from others. Finer makes both ends worse together. Keep ${b.clicks!=null?b.clicks+" clicks":"the grind"}, raise the water ${b.temp!=null?`to ${Math.min(TMAX,b.temp+3)} °C`:"by 3 °C"} and wet the whole bed on the first pour.`};
+  else{
+    const win=recipeWindow(byId[b.recipe]);
+    if(outsideWindow(win,b.time))
+      v={rule:"time",head:`${mmss(b.time)} against the recipe's ${mmss(win.mid)}.`,
+        body:`The timing is far enough out that it explains the cup better than the grind does. ${b.time>win.hi?"A slow drain usually means the grind is too fine for this recipe, so go 2 to 3 clicks coarser and see if the clock comes back.":"A fast drain usually means the grind is too coarse for this recipe, so go 2 to 3 clicks finer and see if the clock comes back."}`};
+  }
+  v=v||tempCheck(b)||refineMove(b,(b.score==null?7:b.score)<=4)||{rule:"",head:"Tap how strong it was and how it extracted.",body:"Two taps and this turns into a number to change."};
+  const note=[age!=null&&age>rw.peak?restLine(age,b.roast):"",flavourRead(b)].filter(Boolean).join(" ");
+  return Object.assign({},v,{note});
 }
 
-function coach(key,lane,roastDate,roast){
+function coach(key,lane,roastDate,roast,ctx){
+  let v=coachCore(key,lane,roastDate,roast,ctx);
+  const l=bagBrews(key,lane),last=l[l.length-1];
+  if(!last||v.state==="blocked"&&v.rule==="resting")return v;
+  const tc=tempCheck(last);
+  if(tc&&!v.done&&!["uneven","recipe-switch","two-vars"].includes(v.rule))v=Object.assign({},v,tc,{badge:"Temperature first"});
+  const extra=[ageAt(last)!=null&&ageAt(last)>restFor(last.roast||roast).peak?restLine(ageAt(last),last.roast||roast):"",flavourRead(last)].filter(Boolean).join(" ");
+  return extra?Object.assign({},v,{body:(v.body?v.body+" ":"")+extra}):v;
+}
+function coachCore(key,lane,roastDate,roast,ctx){
   const l=bagBrews(key,lane),last=l[l.length-1],prev=l[l.length-2];
   const lab=(LANE[lane]||lane).toLowerCase();
   const blocked=(rule,head,body,hold,target,extra)=>Object.assign({state:"blocked",rule,badge:"Not the grind",head,body,hold,target},extra||{});
 
   if(!last){
-    const inLane=brews.map(normBrew).filter(b=>laneOf(b)===lane&&b.score!=null);
-    let r=inLane.length?byId[inLane.slice().sort((a,b)=>b.score-a.score)[0].recipe]:null;
+    ctx=ctx||{};
+    const picked=ctx.recipe&&byId[ctx.recipe]&&laneOf({device:byId[ctx.recipe].dev,recipe:ctx.recipe})===lane?byId[ctx.recipe]:null;
+    const inLane=brews.map(normBrew).filter(b=>laneOf(b)===lane&&b.score!=null&&byId[b.recipe]);
+    let r=picked||(inLane.length?byId[inLane.slice().sort((a,b)=>b.score-a.score)[0].recipe]:null);
     r=r||R.find(x=>x.dev===(lane==="ap"?"ap":"sw"))||R[0];
-    const base=n1(r.c5),rl=String(roast||"").toLowerCase();
-    const adj=rl.includes("light")?-1:rl.includes("dark")?1:0;
-    const c=base!=null?base+adj:null;
-    const age=roastDate?Math.round((new Date(today())-new Date(roastDate))/864e5):null;
+    const pl=planFor(r,Object.assign({},ctx,{roast,roastDate}));
     return {state:"start",rule:"start",badge:"First brew of this bag",
-      head:c!=null?`Start at ${c} clicks on ${recipeLabel(r)}.`:`Start on ${recipeLabel(r)}.`,
-      body:[`Nothing logged for this bag on the ${lab} yet, so there is no history to read. That number is the recipe's own estimate${adj?`, moved one click ${adj<0?"finer for the light roast":"coarser for the dark roast"}`:""}.`,
-        age!=null&&age<5?`It is day ${age} off roast, so treat the first cup as a reading rather than a result.`:"",
-        age!=null&&age>28?`It is day ${age} off roast, which flattens the cup whatever you do with the grinder.`:""].filter(Boolean).join(" "),
+      head:pl.clicks!=null?`Start at ${pl.clicks} clicks on ${recipeLabel(r)}.`:`Start on ${recipeLabel(r)}.`,
+      body:[`Nothing logged for this bag on the ${lab} yet.`,...pl.why,pl.rest].filter(Boolean).join(" "),
       hold:"Brew it as written and log it. The coaching starts on the second brew.",
-      target:{recipe:r.id,clicks:c,dose:r.dose,water:r.water,temp:n1(r.temp)}};
+      target:{recipe:r.id,clicks:pl.clicks,dose:r.dose,water:r.water,temp:pl.t1,temp2:pl.t2}};
   }
 
   const T={recipe:last.recipe,clicks:last.clicks,dose:last.dose,water:last.water,temp:last.temp};
   const age=ageAt(last);
 
-  if(age!=null&&age<5)
+  const rw=restFor(last.roast||roast);
+  if(age!=null&&age<rw.min)
     return blocked("resting",`Day ${age} off roast. Wait before you touch the grinder.`,
-      `This bag was ${age} days off roast when you brewed it. A fresh bag is still giving off gas, which keeps water off the grounds and reads as sour and thin however fine you go. Grind finer now and you will have to undo it in three days.`,
-      `Brew it the same way, ${settingLine(last)}, on day five or six and log that. If you want coffee before then, raise the water 2 to 3 °C instead.`,T);
-  if(age!=null&&age>28)
-    return blocked("stale",`Day ${age} off roast. This is the bag, not the grind.`,
-      `Past four weeks the aromatics are gone and the cup goes flat and papery. No grind setting brings that back, so a dialling run on this bag teaches you nothing you can carry to the next one.`,
-      `Finish it on milk or over ice. Start the dialling fresh on the next bag.`,T);
+      `A ${roastWord(last.roast||roast)} roast needs about ${rw.min} days. Until then it is still giving off gas, which keeps water off the grounds and reads as sour and thin however fine you go. Grind finer now and you will have to undo it in a few days.`,
+      `Brew it the same way, ${settingLine(last)}, on day ${rw.min} or later and log that. If you want coffee before then, raise the water 2 to 3 °C instead.`,T);
   if(last.extraction==="sour"&&["bitter","dry"].includes(last.bug)){
     const up=tempUp(last,3);
     return blocked("uneven","Sharp and bitter in one cup. Do not move the grinder.",
@@ -1425,7 +1594,8 @@ function bagCtx(){
     const h=brewsFor(nb).map(normBrew).filter(b=>b.bean).sort((a,b)=>(b.created||0)-(a.created||0))[0];
     if(h&&bagBrews(bagKey(h),lane).length){name=h.bean;roaster=h.roaster||"";roast=h.roast||roast;rd=h.roastDate||rd;key=bagKey(h)}
   }
-  return {key,lane,name,roaster,roastDate:rd,roast,label:name+(roaster?", "+roaster:"")};
+  const process=bp==="__new"?$("#fProcess").value:(nb?nb.process||"":"");
+  return {key,lane,name,roaster,roastDate:rd,roast,process,recipe:fRecipe.value,label:name+(roaster?", "+roaster:"")};
 }
 const pendKey=c=>"pend|"+c.key+"|"+c.lane;
 function setPend(c,v){if(v)lsSet(pendKey(c),v);else try{localStorage.removeItem(pendKey(c))}catch(e){}}
@@ -1434,7 +1604,7 @@ function renderCoach(){
   const el=$("#coachCard");if(!el)return;
   const c=coachCtx=bagCtx();
   if(!c.name){el.hidden=true;coachNow=null;return}
-  let v=coach(c.key,c.lane,c.roastDate,c.roast);
+  let v=coach(c.key,c.lane,c.roastDate,c.roast,c);
   if(coachPush&&v.done){
     const l=bagBrews(c.key,c.lane),last=l[l.length-1];
     const m=last&&refineMove(Object.assign({},last,{extraction:"",strength:"",bug:"",score:7}),false);
@@ -1479,7 +1649,7 @@ $("#coachCard").addEventListener("click",e=>{
     showRecipeInfo();
     fillBeanPick(keep);if(rd)$("#fRoastDate").value=rd;
     const set=(i,x)=>{if(x!=null&&x!=="")$(i).value=x};
-    set("#fClicks",t.clicks);set("#fDose",t.dose);set("#fWater",t.water);set("#fTemp",t.temp);
+    set("#fClicks",t.clicks);set("#fDose",t.dose);set("#fWater",t.water);set("#fTemp",t.temp);setTemp2(t.temp2);
     updateRatio();renderCoach();window.scrollTo(0,0);toast("Set up. Brew it, then come back and tap the taste.");
   }
 });
@@ -1494,7 +1664,7 @@ function formBrew(){
   const c=bagCtx();
   return {date:$("#fDate").value,device:$("#fDevice").value,recipe:fRecipe.value,
     bean:c.name,roaster:c.roaster,roast:c.roast,roastDate:c.roastDate,
-    clicks:num("#fClicks"),dose:num("#fDose"),water:num("#fWater"),temp:num("#fTemp"),time:parseTime($("#fTime").value),
+    clicks:num("#fClicks"),dose:num("#fDose"),water:num("#fWater"),temp:num("#fTemp"),temp2:$("#fTemp2Wrap").hidden?null:num("#fTemp2"),time:parseTime($("#fTime").value),
     strength:getOpt("fStrength"),extraction:getOpt("fExtraction"),bug:getPick("fBug"),vs:getOpt("fVs"),
     score:+$("#fScore").value,mouth:getMouth(),flavours:getFlav()};
 }
@@ -1502,13 +1672,13 @@ let autoNext="";
 function updateHint(){
   const h=$("#tasteHint");if(!h)return;
   const b=normBrew(formBrew());
-  if(!b.extraction&&!b.strength&&!b.bug){h.hidden=true;return}
+  if(!b.extraction&&!b.strength&&!b.bug&&!flavourRead(b)){h.hidden=true;return}
   const v=liveAdvice(b);
-  h.hidden=false;h.innerHTML=`<b>${esc(v.head)}</b> ${esc(v.body)}`;
+  h.hidden=false;h.innerHTML=`<b>${esc(v.head)}</b> ${esc(v.body)}${v.note?`<div style="margin-top:6px">${esc(v.note)}</div>`:""}`;
 }
 function onTaste(){updateHint();const v=liveAdvice(normBrew(formBrew())),n=$("#fNext");if(!n.value||n.value===autoNext){n.value=v.head||"";autoNext=n.value}}
 ["fStrength","fExtraction","fVs"].forEach(id=>$("#"+id).addEventListener("click",e=>{const b=e.target.closest(".opt");if(!b)return;setOpt(id,b.getAttribute("aria-pressed")==="true"?"":b.dataset.v);onTaste()}));
-["#fDevice","#fRecipe","#fBeanPick","#fRoastDate","#fBean","#fRoast","#fClicks","#fDose","#fWater","#fTemp"].forEach(sel=>{const e=$(sel);if(e)e.addEventListener("change",()=>renderCoach())});
+["#fDevice","#fRecipe","#fBeanPick","#fRoastDate","#fBean","#fRoast","#fProcess","#fClicks","#fDose","#fWater","#fTemp","#fTemp2"].forEach(sel=>{const e=$(sel);if(e)e.addEventListener("change",()=>renderCoach())});
 
 function tasteOf(b){const t=b.taste||"";return {strength:b.strength||(t==="weak"||t==="strong"?t:""),extraction:b.extraction||(["sour","bitter","balanced"].includes(t)?t:"")}}
 const XL={sour:"Sour",balanced:"Balanced",bitter:"Bitter",dry:"Drying"},SL={weak:"Weak",right:"Right strength",strong:"Strong"};
@@ -1519,8 +1689,8 @@ let hDev="all";
 chipGroup($("#histFilter"),v=>{hDev=v;renderHistory()});
 function daysOff(b){if(!b.roastDate||!b.date)return null;return Math.round((new Date(b.date)-new Date(b.roastDate))/864e5)}
 function entryHtml(b,example){
-  const r=byId[b.recipe];const d=daysOff(b);
-  const bits=[b.dose!=null&&b.dose+" g",b.water!=null&&b.water+" g",b.dose&&b.water&&ratio(b.dose,b.water),b.temp!=null&&b.temp+" °C",b.clicks!=null&&b.clicks+" clicks",b.time!=null&&mmss(b.time)].filter(Boolean).join("  ·  ");
+  const r=byId[b.recipe];const d=daysOff(b);const nb=normBrew(b);
+  const bits=[b.dose!=null&&b.dose+" g",b.water!=null&&b.water+" g",b.dose&&b.water&&ratio(b.dose,b.water),b.temp!=null&&(nb.temp2!=null?`${b.temp} then ${nb.temp2} °C`:b.temp+" °C"),b.clicks!=null&&b.clicks+" clicks",nb.time!=null&&mmss(nb.time)].filter(Boolean).join("  ·  ");
   return `<article class="entry${example?" example":""}">
     <div class="row between" style="align-items:flex-start">
       <div style="min-width:0;flex:1">
@@ -1566,7 +1736,8 @@ function loadBrew(b,edit){
   const set=(id,v)=>$(id).value=v??"";
   const bb=beanForBrew(b);lastPickId=null;fillBeanPick(bb?bb.id:(activeBeans()[0]?activeBeans()[0].id:"__new"));
   if(b.roastDate){$("#fRoastDate").value=b.roastDate;lastPickId=$("#fBeanPick").value}
-  set("#fClicks",b.clicks);set("#fDose",b.dose);set("#fWater",b.water);set("#fTemp",b.temp);set("#fTime",b.time!=null?mmss(b.time):"");
+  const nb2=normBrew(b);showTemp2(nb2.temp2!=null||(byId[b.recipe]&&twoTemps(byId[b.recipe])));
+  set("#fClicks",b.clicks);set("#fDose",b.dose);set("#fWater",b.water);set("#fTemp",b.temp);set("#fTemp2",nb2.temp2);set("#fTime",nb2.time!=null?mmss(nb2.time):"");
   if(edit){
     editingId=b.id;$("#formTitle").textContent="Edit brew";$("#saveBtn").textContent="Update brew";
     set("#fDate",b.date);{const t=tasteOf(b);setOpt("fStrength",t.strength);setOpt("fExtraction",t.extraction)}set("#fNotes",b.notes);set("#fNext",b.next);autoNext="";setFlav(b.flavours);setMouth(b.mouth);
@@ -1657,7 +1828,7 @@ function beanStats(b){
 }
 function lastUsed(b){return brewsFor(b).reduce((m,x)=>Math.max(m,x.created||0),b.restockedAt||b.created||0)}
 function activeBeans(){return allBeans().filter(b=>!b.finished).sort((a,b)=>lastUsed(b)-lastUsed(a))}
-function restTag(d){return `<span class="rest ${d<7?"early":d<=35?"ok":""}">${d<7?`Day ${d}, still resting`:`Day ${d} off roast`}</span>`}
+function restTag(d,roast){const rw=restFor(roast);return `<span class="rest ${d<rw.min?"early":d<=rw.peak?"ok":""}">${d<rw.min?`Day ${d}, still resting`:d<=rw.peak?`Day ${d}, best window`:d<=rw.fade?`Day ${d}, past peak`:`Day ${d}, fading`}</span>`}
 function beanLabel(b){
   const st=beanStats(b),d=daysSince(b.roastDate);
   const bits=[b.name+(b.roaster?", "+b.roaster:"")];
@@ -1707,7 +1878,7 @@ function onBeanPick(){
   if(!b){$("#beanInfo").innerHTML="";return}
   const st=beanStats(b),d=daysSince(b.roastDate);
   $("#beanInfo").innerHTML=[
-    b.roast&&`<span>${esc(b.roast)}</span>`, b.process&&`<span>${esc(b.process)}</span>`, d!=null&&restTag(d),
+    b.roast&&`<span>${esc(b.roast)}</span>`, b.process&&`<span>${esc(b.process)}</span>`, d!=null&&restTag(d,b.roast),
     st.remaining!=null&&`<span><b>${Math.max(0,Math.round(st.remaining))} g</b> left</span>`,
     st.best&&`<span>Best <b>${st.best.score}/10</b>${st.best.clicks!=null?` at ${st.best.clicks} clicks`:""}</span>`,
     b.finished&&`<span><b>Bag finished</b></span>`,
@@ -1769,7 +1940,7 @@ function beanCard(b){
       <div style="min-width:0;flex:1"><h3>${esc(b.name)}</h3><div class="muted" style="font-size:13px">${esc([b.roaster,b.origin,b.variety].filter(Boolean).join(". "))}</div></div>
       ${st.count?`<div style="text-align:right"><div class="score" style="font-family:var(--display);font-size:24px;font-weight:800;line-height:1">${st.avg}</div><div class="muted" style="font-size:11px">avg of ${st.count}</div></div>`:""}
     </div>
-    <div class="row" style="gap:6px">${b.roast?`<span class="tag plain">${esc(b.roast)}</span>`:""}${b.process?`<span class="tag plain">${esc(b.process)}</span>`:""}${d!=null?restTag(d):""}${b.virtual?`<span class="tag plain">From your log</span>`:""}</div>
+    <div class="row" style="gap:6px">${b.roast?`<span class="tag plain">${esc(b.roast)}</span>`:""}${b.process?`<span class="tag plain">${esc(b.process)}</span>`:""}${d!=null?restTag(d,b.roast):""}${b.virtual?`<span class="tag plain">From your log</span>`:""}</div>
     ${b.notes?`<div style="font-size:14px">${esc(b.notes)}</div>`:""}
     ${b.finished?`<div class="muted" style="font-size:13px">Bag finished${st.count?` after ${st.count} logged ${st.count>1?"brews":"brew"}`:""}.</div>`
       :pct!=null?`<div><div class="row between" style="font-size:13px;margin-bottom:4px"><span class="muted">Bag</span><span class="mono">${Math.round(left)} of ${b.bagWeight} g${st.avgDose?`, about ${Math.floor(left/st.avgDose)} brews`:""}</span></div><div class="bar${pct<20?" low":""}"><i style="width:${pct}%"></i></div></div>`
@@ -1794,7 +1965,7 @@ function dialTable(b){
   const l=brewsFor(b).slice().sort((x,y)=>(x.date||"").localeCompare(y.date||"")||(x.created||0)-(y.created||0));
   if(l.length<2)return "";
   const bestScore=Math.max(...l.map(x=>x.score||0));
-  const rows=l.slice(-8).map(x=>{const r=byId[x.recipe];return `<tr${(x.score||0)===bestScore?' style="font-weight:600"':""}><td class="num">${esc((x.date||"").slice(5))}</td><td>${esc(r?r.author.split(" ").slice(-1)[0]:"Own")}</td><td class="num">${x.clicks??"–"}</td><td class="num">${x.temp??"–"}</td><td>${tasteTags(x).join(", ")||"–"}</td><td class="num">${x.score}</td></tr>`}).join("");
+  const rows=l.slice(-8).map(x=>{const r=byId[x.recipe];return `<tr${(x.score||0)===bestScore?' style="font-weight:600"':""}><td class="num">${esc((x.date||"").slice(5))}</td><td>${esc(r?r.author.split(" ").slice(-1)[0]:"Own")}</td><td class="num">${x.clicks??"–"}</td><td class="num">${x.temp??"–"}${x.temp2!=null?"/"+x.temp2:""}</td><td>${tasteTags(x).join(", ")||"–"}</td><td class="num">${x.score}</td></tr>`}).join("");
   return `<details><summary class="muted" style="font-size:13px;cursor:pointer;font-weight:600">Grind history (${l.length} brews)</summary><div class="scroll"><table class="dial"><thead><tr><th>Date</th><th>Recipe</th><th>Clicks</th><th>°C</th><th>Cup</th><th>Score</th></tr></thead><tbody>${rows}</tbody></table></div></details>`;
 }
 function renderBeans(){
@@ -1900,10 +2071,10 @@ function backupNote(){
   $("#backupNote").textContent=!brews.length?"Nothing logged yet.":t?`Last backup ${plural(Math.floor((Date.now()-t)/864e5),"day")} ago. ${plural(brews.length,"brew")}, ${plural(beans.length,"coffee")}${myRecipes.length?` and ${plural(myRecipes.length,"recipe")}`:""} on this phone.`:`Not backed up yet. ${plural(brews.length,"brew")} saved only on this phone.`;
 }
 $("#exportBtn").addEventListener("click",async()=>{
-  const cols=["date","device","recipe","coffee","roaster","origin","variety","roast","process","roastDate","daysOffRoast","clicks","dose","water","ratio","temp","time","extraction","strength","sweet","acid","body","score","flavours","notes","next"];
+  const cols=["date","device","recipe","coffee","roaster","origin","variety","roast","process","roastDate","daysOffRoast","clicks","dose","water","ratio","temp","temp2","time","extraction","strength","sweet","acid","body","score","flavours","notes","next"];
   const rows=brews.slice().sort((a,b)=>(a.date||"").localeCompare(b.date||"")).map(b=>{
     const bn=beanForBrew(b)||{},r=byId[b.recipe];
-    const v={date:b.date,device:DEV[b.device],recipe:r?recipeLabel(r):"Own recipe",coffee:b.bean,roaster:b.roaster,origin:bn.origin,variety:bn.variety,roast:b.roast,process:b.process,roastDate:b.roastDate,daysOffRoast:daysOff(b),clicks:b.clicks,dose:b.dose,water:b.water,ratio:b.dose&&b.water?(b.water/b.dose).toFixed(1):"",temp:b.temp,time:b.time!=null?mmss(b.time):"",extraction:XL[tasteOf(b).extraction]||"",strength:SL[tasteOf(b).strength]||"",sweet:b.sweet,acid:b.acid,body:b.body,score:b.score,flavours:[...(b.flavours||[]),...(b.mouth||[])],notes:b.notes,next:b.next};
+    const v={date:b.date,device:DEV[b.device],recipe:r?recipeLabel(r):"Own recipe",coffee:b.bean,roaster:b.roaster,origin:bn.origin,variety:bn.variety,roast:b.roast,process:b.process,roastDate:b.roastDate,daysOffRoast:daysOff(b),clicks:b.clicks,dose:b.dose,water:b.water,ratio:b.dose&&b.water?(b.water/b.dose).toFixed(1):"",temp:b.temp,temp2:b.temp2??"",time:normBrew(b).time!=null?mmss(normBrew(b).time):"",extraction:XL[tasteOf(b).extraction]||"",strength:SL[tasteOf(b).strength]||"",sweet:b.sweet,acid:b.acid,body:b.body,score:b.score,flavours:[...(b.flavours||[]),...(b.mouth||[])],notes:b.notes,next:b.next};
     return cols.map(c=>csvCell(v[c])).join(",");
   });
   await offerFile(`brew-log-${today()}.csv`,cols.join(",")+"\n"+rows.join("\n"),"text/csv");
